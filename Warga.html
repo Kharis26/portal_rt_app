@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Warga & KK - RT Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</head>
+<body class="bg-slate-100 p-4 min-h-screen pb-20">
+    <div class="max-w-md mx-auto space-y-4">
+        <!-- Header -->
+        <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow">
+            <div>
+                <h1 class="font-bold text-slate-800 text-lg">Data Warga & KK</h1>
+                <p class="text-xs text-slate-500"><span id="totalKkHead">0</span> KK | <span id="totalWargaHead">0</span> Jiwa</p>
+            </div>
+            <a href="dashboard.html" class="text-xs bg-slate-200 px-3 py-2 rounded-lg text-slate-700 font-medium">Kembali</a>
+        </div>
+
+        <!-- Tombol Pencarian & Tambah -->
+        <div class="flex gap-2">
+            <input type="text" id="searchInput" placeholder="Cari nama / blok..." class="w-full p-2.5 border border-slate-300 rounded-lg text-xs bg-white focus:outline-emerald-600">
+            <button onclick="alert('Fitur tambah data')" class="bg-emerald-600 text-white text-xs px-4 py-2.5 rounded-lg font-semibold whitespace-nowrap">+ Tambah KK</button>
+        </div>
+
+        <!-- Daftar Kartu Keluarga (KK) -->
+        <div id="daftarWarga" class="space-y-3">
+            <p class="text-xs text-slate-500 text-center py-4">Memuat data warga...</p>
+        </div>
+    </div>
+
+    <script>
+        async function muatDataWarga() {
+            try {
+                const { data: households, error } = await supabase
+                    .from('households')
+                    .select(`
+                        id,
+                        blok,
+                        status_hunian,
+                        no_kk,
+                        residents ( id, nama_lengkap, status_keluarga, nik )
+                    `)
+                    .order('blok', { ascending: true });
+
+                const container = document.getElementById('daftarWarga');
+                container.innerHTML = '';
+
+                if (error || !households || households.length === 0) {
+                    container.innerHTML = `<div class="bg-white p-4 rounded-xl shadow text-center text-xs text-slate-500">Belum ada data warga terdaftar.</div>`;
+                    return;
+                }
+
+                let totalJiwa = 0;
+
+                households.forEach(kk => {
+                    const kepalaKeluarga = kk.residents ? kk.residents.find(r => r.status_keluarga === 'Kepala Keluarga') : null;
+                    const jumlahAnggota = kk.residents ? kk.residents.length : 0;
+                    totalJiwa += jumlahAnggota;
+
+                    const namaKepala = kepalaKeluarga ? kepalaKeluarga.nama_lengkap : 'Belum diisi';
+                    const nikRaw = kepalaKeluarga ? kepalaKeluarga.nik : '----------------';
+                    const maskedNik = nikRaw.length >= 8 ? nikRaw.substring(0, 4) + '••••••••' + nikRaw.substring(nikRaw.length - 4) : nikRaw;
+
+                    const card = document.createElement('div');
+                    card.className = 'bg-white p-4 rounded-xl shadow flex justify-between items-center';
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-bold text-sm text-slate-800">${namaKepala}</h3>
+                                <span class="text-[10px] px-2 py-0.5 rounded ${kk.status_hunian === 'Tetap' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'} font-medium">${kk.status_hunian}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Blok ${kk.blok} • ${jumlahAnggota} Anggota</p>
+                            <p class="text-[11px] text-slate-400 font-mono mt-1">${maskedNik}</p>
+                        </div>
+                        <button class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-3 py-1.5 rounded-lg">Detail</button>
+                    `;
+                    container.appendChild(card);
+                });
+
+                document.getElementById('totalKkHead').innerText = households.length;
+                document.getElementById('totalWargaHead').innerText = totalJiwa;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        muatDataWarga();
+    </script>
+</body>
+</html>

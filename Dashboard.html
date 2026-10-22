@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pengurus - RT Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</head>
+<body class="bg-slate-100 p-4 min-h-screen">
+    <div class="max-w-md mx-auto space-y-4">
+        <!-- Header Dashboard -->
+        <div class="flex justify-between items-center bg-emerald-600 text-white p-4 rounded-xl shadow">
+            <div>
+                <h1 class="font-bold text-lg">Dashboard RT Digital</h1>
+                <p class="text-xs opacity-90">Selamat Datang, Pengurus</p>
+            </div>
+            <button id="btnLogout" class="bg-emerald-700 text-xs px-3 py-2 rounded-lg hover:bg-emerald-800">Keluar</button>
+        </div>
+
+        <!-- Ringkasan Data -->
+        <div class="grid grid-cols-2 gap-3">
+            <a href="warga.html" class="bg-white p-4 rounded-xl shadow border-l-4 border-emerald-500 block hover:bg-slate-50">
+                <p class="text-xs text-slate-500 font-semibold">Total Warga</p>
+                <p class="text-xl font-bold text-slate-800 mt-1" id="totalWarga">0 Jiwa</p>
+            </a>
+            <a href="warga.html" class="bg-white p-4 rounded-xl shadow border-l-4 border-blue-500 block hover:bg-slate-50">
+                <p class="text-xs text-slate-500 font-semibold">Total KK</p>
+                <p class="text-xl font-bold text-slate-800 mt-1" id="totalKK">0 KK</p>
+            </a>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow border-l-4 border-amber-500">
+            <p class="text-xs text-slate-500 font-semibold">Saldo Kas RT</p>
+            <p class="text-2xl font-bold text-slate-800 mt-1" id="saldoKas">Rp 0</p>
+        </div>
+
+        <!-- Navigasi Cepat -->
+        <div class="grid grid-cols-2 gap-3 pt-2">
+            <a href="warga.html" class="bg-white p-3 rounded-xl shadow text-center text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200">
+                👥 Data Warga & KK
+            </a>
+            <button onclick="alert('Menu Iuran & Kas')" class="bg-white p-3 rounded-xl shadow text-center text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200">
+                💰 Iuran & Kas RT
+            </button>
+        </div>
+    </div>
+
+    <script>
+        async function muatDashboard() {
+            try {
+                // Ambil data saldo kas
+                const { data: kas } = await supabase.from('view_saldo_kas').select('*').single();
+                if (kas) {
+                    document.getElementById('saldoKas').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(kas.saldo_saat_ini);
+                }
+
+                // Ambil jumlah KK
+                const { count: kkCount } = await supabase.from('households').select('*', { count: 'exact', head: true });
+                document.getElementById('totalKK').innerText = `${kkCount || 0} KK`;
+
+                // Ambil jumlah Warga
+                const { count: wargaCount } = await supabase.from('residents').select('*', { count: 'exact', head: true });
+                document.getElementById('totalWarga').innerText = `${wargaCount || 0} Jiwa`;
+            } catch (e) {
+                console.error('Error muat dashboard:', e);
+            }
+        }
+
+        document.getElementById('btnLogout').addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = 'index.html';
+        });
+
+        muatDashboard();
+    </script>
+</body>
+</html>
