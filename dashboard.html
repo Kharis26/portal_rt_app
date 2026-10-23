@@ -1,4 +1,3 @@
-HTML
 
 <!DOCTYPE html>
 <html lang="id">
@@ -21,6 +20,7 @@ HTML
                     Memuat wilayah...
                 </p>
             </div>
+
             <button id="btnLogout" type="button"
                 class="bg-emerald-700 text-xs px-3 py-2 rounded-lg">
                 Keluar
@@ -59,14 +59,14 @@ HTML
                     class="bg-white p-4 rounded-xl shadow text-center
                            text-sm font-semibold border border-slate-200">
                     <span class="block text-2xl mb-2">👥</span>
-                    Data Warga & KK
+                    Data Warga &amp; KK
                 </a>
 
                 <button id="btnKas" type="button"
                     class="bg-white p-4 rounded-xl shadow text-center
                            text-sm font-semibold border border-slate-200">
                     <span class="block text-2xl mb-2">💰</span>
-                    Iuran & Kas RT
+                    Iuran &amp; Kas RT
                 </button>
             </div>
         </section>
@@ -88,8 +88,25 @@ HTML
         } from './app.js';
 
         const $ = id => document.getElementById(id);
-
         let sedangMemuat = false;
+        let sedangLogout = false;
+
+        // Batas waktu untuk proses yang berpotensi tertahan.
+        function denganBatasWaktu(promise, nama, ms = 15000) {
+            let timer;
+
+            return Promise.race([
+                promise,
+                new Promise((_, reject) => {
+                    timer = setTimeout(() => {
+                        reject(new Error(
+                            nama + ' tidak merespons dalam ' +
+                            Math.round(ms / 1000) + ' detik.'
+                        ));
+                    }, ms);
+                })
+            ]).finally(() => clearTimeout(timer));
+        }
 
         function tampilkanStatus(teks, error = false) {
             const box = $('statusDashboard');
@@ -103,7 +120,8 @@ HTML
         function formatRupiah(nilai) {
             const angka = Number(nilai);
 
-            if (!Number.isFinite(angka)) {
+            if (nilai === null || nilai === undefined ||
+                nilai === '' || !Number.isFinite(angka)) {
                 throw new Error('Nilai saldo kas tidak valid.');
             }
 
@@ -115,46 +133,73 @@ HTML
         }
 
         async function muatDashboard() {
-            if (sedangMemuat) return;
+            if (sedangMemuat || sedangLogout) return;
 
             sedangMemuat = true;
             $('btnRefresh').disabled = true;
+
             $('totalWarga').textContent = 'Memuat...';
             $('totalKK').textContent = 'Memuat...';
             $('saldoKas').textContent = 'Memuat...';
 
+            tampilkanStatus('Memeriksa sesi dan memuat data...');
+
             try {
-                // Pastikan pengguna sudah login.
-                const sesi = await cekSesi();
+                // 1. Periksa sesi login.
+                const sesi = await denganBatasWaktu(
+                    cekSesi(),
+                    'Pemeriksaan sesi'
+                );
 
                 if (!sesi) {
                     window.location.replace('index.html');
                     return;
                 }
 
-                // Ambil ringkasan dan pengaturan wilayah.
+                // 2. Ambil ringkasan dan wilayah secara bersamaan.
                 const [ringkasan, wilayah] = await Promise.all([
-                    muatRingkasanDashboard(),
-                    tesKoneksi()
+                    denganBatasWaktu(
+                        muatRingkasanDashboard(),
+                        'Ringkasan dashboard'
+                    ),
+                    denganBatasWaktu(
+                        tesKoneksi(),
+                        'Pengaturan wilayah'
+                    )
                 ]);
 
-                // Tampilkan data hasil database.
+                // 3. Validasi hasil sebelum ditampilkan.
+                if (!ringkasan ||
+                    !Number.isFinite(Number(ringkasan.totalWarga)) ||
+                    !Number.isFinite(Number(ringkasan.totalKK))) {
+                    throw new Error(
+                        'Format ringkasan warga atau KK tidak valid.'
+                    );
+                }
+
                 $('totalWarga').textContent =
-                    `${ringkasan.totalWarga.toLocaleString('id-ID')} Jiwa`;
+                    Number(ringkasan.totalWarga)
+                        .toLocaleString('id-ID') + ' Jiwa';
 
                 $('totalKK').textContent =
-                    `${ringkasan.totalKK.toLocaleString('id-ID')} KK`;
+                    Number(ringkasan.totalKK)
+                        .toLocaleString('id-ID') + ' KK';
 
                 $('saldoKas').textContent =
                     formatRupiah(ringkasan.saldoKas);
 
                 if (wilayah) {
+                    const rt = wilayah.rt ?? '-';
+                    const rw = wilayah.rw ?? '-';
+                    const desa = wilayah.desa_kelurahan ?? '';
+                    const kabupaten = wilayah.kabupaten_kota ?? '';
+
                     $('infoWilayah').textContent =
-                        `RT ${wilayah.rt} / RW ${wilayah.rw} · ` +
-                        `${wilayah.desa_kelurahan}, ` +
-                        `${wilayah.kabupaten_kota}`;
+                        `RT ${rt} / RW ${rw} · ${desa}` +
+                        (kabupaten ? `, ${kabupaten}` : '');
                 } else {
-                    $('infoWilayah').textContent = 'RT Digital';
+                    $('infoWilayah').textContent =
+                        'Pengaturan wilayah belum tersedia.';
                 }
 
                 tampilkanStatus('Data dashboard berhasil dimuat.');
@@ -178,30 +223,52 @@ HTML
             }
         }
 
-        // Logout dengan penanganan error.
+        // 4. Logout dengan pemeriksaan hasil.
         $('btnLogout').addEventListener('click', async () => {
+            if (sedangLogout) return;
+
+            sedangLogout = true;
             $('btnLogout').disabled = true;
 
             try {
-                await logout();
+                const hasil = await denganBatasWaktu(
+                    logout(),
+                    'Logout'
+                );
+
+                if (!hasil || !hasil.success) {
+                    throw new Error(
+                        hasil?.message || 'Logout gagal.'
+                    );
+                }
+
                 window.location.replace('index.html');
+
             } catch (error) {
                 tampilkanStatus(
                     'Logout gagal: ' + error.message,
                     true
                 );
+
+                sedangLogout = false;
                 $('btnLogout').disabled = false;
             }
         });
 
-        $('btnRefresh').addEventListener('click', muatDashboard);
+        // 5. Muat ulang data.
+        $('btnRefresh').addEventListener(
+            'click',
+            muatDashboard
+        );
 
+        // Menu transaksi belum dibuat.
         $('btnKas').addEventListener('click', () => {
             tampilkanStatus(
                 'Menu Iuran & Kas RT belum terhubung ke halaman transaksi.'
             );
         });
 
+        // Jalankan dashboard.
         muatDashboard();
     </script>
 </body>
