@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -12,36 +13,128 @@
         <div class="w-16 h-16 bg-emerald-600 text-white rounded-full flex items-center justify-center font-bold text-xl mx-auto mb-3">
             RT
         </div>
-        <h1 class="text-xl font-bold text-slate-800" id="namaRt">RT Digital</h1>
-        <p class="text-sm text-slate-500 mb-6" id="lokasiRt">Memuat data wilayah...</p>
+
+        <h1 class="text-xl font-bold text-slate-800" id="namaRt">
+            RT Digital
+        </h1>
+
+        <p class="text-sm text-slate-500 mb-6" id="lokasiRt">
+            Memuat data wilayah...
+        </p>
 
         <form id="loginForm" class="space-y-4 text-left">
             <div>
-                <label class="text-xs font-semibold text-slate-600 uppercase">Email / NIK</label>
-                <input type="text" id="email" required placeholder="Masukkan Email/NIK" class="w-full mt-1 p-3 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
+                <label class="text-xs font-semibold text-slate-600 uppercase">
+                    Email
+                </label>
+                <input
+                    type="email"
+                    id="email"
+                    required
+                    autocomplete="username"
+                    placeholder="Masukkan email terdaftar"
+                    class="w-full mt-1 p-3 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600"
+                >
             </div>
+
             <div>
-                <label class="text-xs font-semibold text-slate-600 uppercase">Kata Sandi</label>
-                <input type="password" id="password" required placeholder="••••••••" class="w-full mt-1 p-3 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
+                <label class="text-xs font-semibold text-slate-600 uppercase">
+                    Kata Sandi
+                </label>
+                <input
+                    type="password"
+                    id="password"
+                    required
+                    autocomplete="current-password"
+                    placeholder="Masukkan kata sandi"
+                    class="w-full mt-1 p-3 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600"
+                >
             </div>
-            <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition">
+
+            <button
+                type="submit"
+                id="tombolMasuk"
+                class="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition"
+            >
                 Masuk
             </button>
+
+            <p id="pesan" role="status" aria-live="polite"
+               class="text-sm text-center" hidden></p>
         </form>
     </div>
 
     <script type="module">
-        import { tesKoneksi } from './app.js';
+        import { tesKoneksi, login } from './app.js';
+
+        const pesan = document.getElementById('pesan');
+        const tombolMasuk = document.getElementById('tombolMasuk');
+
+        function tampilkanPesan(teks, berhasil = false) {
+            pesan.hidden = false;
+            pesan.textContent = teks;
+            pesan.className = berhasil
+                ? 'text-sm text-center text-emerald-700'
+                : 'text-sm text-center text-red-600';
+        }
 
         async function init() {
-            const data = await tesKoneksi();
-            if (data) {
-                document.getElementById('namaRt').innerText = `RT ${data.rt} / RW ${data.rw}`;
-                document.getElementById('lokasiRt').innerText = `${data.desa_kelurahan}, ${data.kabupaten_kota}`;
-            } else {
-                document.getElementById('lokasiRt').innerText = 'Gagal terhubung ke database';
+            try {
+                const data = await tesKoneksi();
+
+                if (data) {
+                    document.getElementById('namaRt').textContent =
+                        `RT ${data.rt} / RW ${data.rw}`;
+
+                    document.getElementById('lokasiRt').textContent =
+                        `${data.desa_kelurahan}, ${data.kabupaten_kota}`;
+                } else {
+                    document.getElementById('lokasiRt').textContent =
+                        'Pengaturan wilayah belum dapat dimuat';
+                }
+            } catch (error) {
+                console.error('Gagal memuat wilayah:', error);
+                document.getElementById('lokasiRt').textContent =
+                    'Gagal terhubung ke database';
             }
         }
+
+        document.getElementById('loginForm').addEventListener(
+            'submit',
+            async function(event) {
+                event.preventDefault();
+
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+
+                tombolMasuk.disabled = true;
+                tombolMasuk.textContent = 'Memeriksa...';
+                pesan.hidden = true;
+
+                try {
+                    const hasil = await login(email, password);
+
+                    if (!hasil.success) {
+                        tampilkanPesan(
+                            'Login gagal. Periksa email dan kata sandi.'
+                        );
+                        return;
+                    }
+
+                    tampilkanPesan(
+                        'Login berhasil. Sesi pengguna sudah aktif. Halaman dashboard belum dihubungkan.',
+                        true
+                    );
+                } catch (error) {
+                    console.error('Kesalahan login:', error);
+                    tampilkanPesan('Terjadi kesalahan. Coba kembali.');
+                } finally {
+                    tombolMasuk.disabled = false;
+                    tombolMasuk.textContent = 'Masuk';
+                }
+            }
+        );
+
         init();
     </script>
 </body>
