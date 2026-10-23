@@ -70,3 +70,62 @@ export async function logout() {
 
     return { success: true };
 }
+
+function denganBatasWaktuApp(promise, nama, ms = 12000) {
+    let timer;
+
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => {
+            timer = setTimeout(() => {
+                reject(new Error(
+                    nama + ' tidak merespons dalam 12 detik.'
+                ));
+            }, ms);
+        })
+    ]).finally(() => clearTimeout(timer));
+}
+
+export async function muatRingkasanDashboard() {
+    const [kk, warga, kas] = await Promise.all([
+        denganBatasWaktuApp(
+            supabase.from('households')
+                .select('id', { count: 'exact', head: true }),
+            'Data KK'
+        ),
+        denganBatasWaktuApp(
+            supabase.from('residents')
+                .select('id', { count: 'exact', head: true })
+                .eq('is_active', true),
+            'Data warga'
+        ),
+        denganBatasWaktuApp(
+            supabase.from('view_saldo_kas')
+                .select('saldo_saat_ini')
+                .maybeSingle(),
+            'Saldo kas'
+        )
+    ]);
+
+    if (kk.error) {
+        throw new Error('Data KK: ' + kk.error.message);
+    }
+
+    if (warga.error) {
+        throw new Error('Data warga: ' + warga.error.message);
+    }
+
+    if (kas.error) {
+        throw new Error('Saldo kas: ' + kas.error.message);
+    }
+
+    if (!kas.data || kas.data.saldo_saat_ini == null) {
+        throw new Error('Data saldo kas belum tersedia.');
+    }
+
+    return {
+        totalKK: kk.count ?? 0,
+        totalWarga: warga.count ?? 0,
+        saldoKas: kas.data.saldo_saat_ini
+    };
+}
