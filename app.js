@@ -71,61 +71,28 @@ export async function logout() {
     return { success: true };
 }
 
-function denganBatasWaktuApp(promise, nama, ms = 12000) {
-    let timer;
-
-    return Promise.race([
-        promise,
-        new Promise((_, reject) => {
-            timer = setTimeout(() => {
-                reject(new Error(
-                    nama + ' tidak merespons dalam 12 detik.'
-                ));
-            }, ms);
-        })
-    ]).finally(() => clearTimeout(timer));
-}
-
+// Memuat ringkasan dashboard dari fungsi Supabase
 export async function muatRingkasanDashboard() {
-    const [kk, warga, kas] = await Promise.all([
-        denganBatasWaktuApp(
-            supabase.from('households')
-                .select('id', { count: 'exact', head: true }),
-            'Data KK'
-        ),
-        denganBatasWaktuApp(
-            supabase.from('residents')
-                .select('id', { count: 'exact', head: true })
-                .eq('is_active', true),
-            'Data warga'
-        ),
-        denganBatasWaktuApp(
-            supabase.from('view_saldo_kas')
-                .select('saldo_saat_ini')
-                .maybeSingle(),
-            'Saldo kas'
-        )
-    ]);
+    const { data, error } = await supabase
+        .rpc('ringkasan_dashboard_publik');
 
-    if (kk.error) {
-        throw new Error('Data KK: ' + kk.error.message);
+    if (error) {
+        console.error('Gagal memuat ringkasan:', error);
+
+        throw new Error(
+            'Gagal memuat ringkasan dashboard: ' + error.message
+        );
     }
 
-    if (warga.error) {
-        throw new Error('Data warga: ' + warga.error.message);
-    }
+    const ringkasan = Array.isArray(data) ? data[0] : data;
 
-    if (kas.error) {
-        throw new Error('Saldo kas: ' + kas.error.message);
-    }
-
-    if (!kas.data || kas.data.saldo_saat_ini == null) {
-        throw new Error('Data saldo kas belum tersedia.');
+    if (!ringkasan) {
+        throw new Error('Data ringkasan dashboard kosong.');
     }
 
     return {
-        totalKK: kk.count ?? 0,
-        totalWarga: warga.count ?? 0,
-        saldoKas: kas.data.saldo_saat_ini
+        totalKK: Number(ringkasan.total_kk ?? 0),
+        totalWarga: Number(ringkasan.total_warga ?? 0),
+        saldoKas: Number(ringkasan.saldo_kas ?? 0)
     };
 }
