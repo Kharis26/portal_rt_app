@@ -1,3 +1,4 @@
+HTML
 
 <!DOCTYPE html>
 <html lang="id">
@@ -17,23 +18,23 @@
             <div>
                 <h1 class="font-bold text-lg">Dashboard RT Digital</h1>
                 <p id="infoWilayah" class="text-xs opacity-90">
-                    Dashboard Pengurus
+                    Memuat wilayah...
                 </p>
             </div>
-            <button id="btnLogout"
+            <button id="btnLogout" type="button"
                 class="bg-emerald-700 text-xs px-3 py-2 rounded-lg">
                 Keluar
             </button>
         </header>
 
         <div id="statusDashboard" role="status" aria-live="polite"
-            class="hidden bg-white p-3 rounded-xl text-sm">
+            class="bg-white p-3 rounded-xl text-sm text-slate-600">
+            Memeriksa sesi dan memuat data...
         </div>
 
         <section class="grid grid-cols-2 gap-3">
             <a href="warga.html"
-                class="bg-white p-4 rounded-xl shadow border-l-4
-                       border-emerald-500">
+                class="bg-white p-4 rounded-xl shadow border-l-4 border-emerald-500">
                 <p class="text-xs text-slate-500 font-semibold">Warga Aktif</p>
                 <p id="totalWarga" class="text-xl font-bold mt-1">Memuat...</p>
             </a>
@@ -52,6 +53,7 @@
 
         <section>
             <h2 class="font-bold text-slate-700 mb-3">Menu Utama</h2>
+
             <div class="grid grid-cols-2 gap-3">
                 <a href="warga.html"
                     class="bg-white p-4 rounded-xl shadow text-center
@@ -74,39 +76,55 @@
                    border border-slate-200 text-sm font-semibold text-emerald-700">
             ↻ Perbarui Data
         </button>
+
     </main>
 
     <script type="module">
-        import { supabase, cekSesi, logout, tesKoneksi } from './app.js';
+        import {
+            cekSesi,
+            logout,
+            tesKoneksi,
+            muatRingkasanDashboard
+        } from './app.js';
 
         const $ = id => document.getElementById(id);
-        let memuat = false;
 
-        function status(teks, error = false) {
+        let sedangMemuat = false;
+
+        function tampilkanStatus(teks, error = false) {
             const box = $('statusDashboard');
+
             box.textContent = teks;
-            box.classList.remove('hidden', 'text-red-700', 'text-emerald-700');
-            box.classList.add(error ? 'text-red-700' : 'text-emerald-700');
+            box.className = error
+                ? 'bg-white p-3 rounded-xl text-sm text-red-700'
+                : 'bg-white p-3 rounded-xl text-sm text-emerald-700';
         }
 
-        function rupiah(nilai) {
-            const n = Number(nilai);
-            if (!Number.isFinite(n)) {
-                throw new Error('Nilai saldo tidak valid.');
+        function formatRupiah(nilai) {
+            const angka = Number(nilai);
+
+            if (!Number.isFinite(angka)) {
+                throw new Error('Nilai saldo kas tidak valid.');
             }
+
             return new Intl.NumberFormat('id-ID', {
                 style: 'currency',
                 currency: 'IDR',
                 maximumFractionDigits: 0
-            }).format(n);
+            }).format(angka);
         }
 
         async function muatDashboard() {
-            if (memuat) return;
-            memuat = true;
+            if (sedangMemuat) return;
+
+            sedangMemuat = true;
             $('btnRefresh').disabled = true;
+            $('totalWarga').textContent = 'Memuat...';
+            $('totalKK').textContent = 'Memuat...';
+            $('saldoKas').textContent = 'Memuat...';
 
             try {
+                // Pastikan pengguna sudah login.
                 const sesi = await cekSesi();
 
                 if (!sesi) {
@@ -114,67 +132,64 @@
                     return;
                 }
 
-                const [kk, warga, kas, wilayah] = await Promise.all([
-                    supabase.from('households')
-                        .select('id', { count: 'exact', head: true }),
-
-                    supabase.from('residents')
-                        .select('id', { count: 'exact', head: true })
-                        .eq('is_active', true),
-
-                    supabase.from('view_saldo_kas')
-                        .select('saldo_saat_ini')
-                        .maybeSingle(),
-
+                // Ambil ringkasan dan pengaturan wilayah.
+                const [ringkasan, wilayah] = await Promise.all([
+                    muatRingkasanDashboard(),
                     tesKoneksi()
                 ]);
 
-                if (kk.error) throw new Error('Data KK: ' + kk.error.message);
-                if (warga.error) throw new Error('Data warga: ' + warga.error.message);
-                if (kas.error) throw new Error('Saldo kas: ' + kas.error.message);
+                // Tampilkan data hasil database.
+                $('totalWarga').textContent =
+                    `${ringkasan.totalWarga.toLocaleString('id-ID')} Jiwa`;
 
                 $('totalKK').textContent =
-                    `${(kk.count ?? 0).toLocaleString('id-ID')} KK`;
+                    `${ringkasan.totalKK.toLocaleString('id-ID')} KK`;
 
-                $('totalWarga').textContent =
-                    `${(warga.count ?? 0).toLocaleString('id-ID')} Jiwa`;
-
-                $('saldoKas').textContent = kas.data
-                    ? rupiah(kas.data.saldo_saat_ini)
-                    : 'Belum tersedia';
+                $('saldoKas').textContent =
+                    formatRupiah(ringkasan.saldoKas);
 
                 if (wilayah) {
                     $('infoWilayah').textContent =
-                        `RT ${wilayah.rt} / RW ${wilayah.rw} · ${wilayah.desa_kelurahan}`;
+                        `RT ${wilayah.rt} / RW ${wilayah.rw} · ` +
+                        `${wilayah.desa_kelurahan}, ` +
+                        `${wilayah.kabupaten_kota}`;
+                } else {
+                    $('infoWilayah').textContent = 'RT Digital';
                 }
 
-                status('Data dashboard berhasil dimuat.');
+                tampilkanStatus('Data dashboard berhasil dimuat.');
 
             } catch (error) {
-                console.error('Dashboard error:', error);
-                status(error.message || 'Gagal memuat dashboard.', true);
-                $('totalKK').textContent = 'Gagal dimuat';
-                $('totalWarga').textContent = 'Gagal dimuat';
-                $('saldoKas').textContent = 'Gagal dimuat';
+                console.error('Kesalahan dashboard:', error);
+
+                $('totalWarga').textContent = '—';
+                $('totalKK').textContent = '—';
+                $('saldoKas').textContent = '—';
+
+                tampilkanStatus(
+                    'Gagal memuat data: ' +
+                    (error.message || 'Kesalahan tidak diketahui.') +
+                    ' Tekan Perbarui Data untuk mencoba kembali.',
+                    true
+                );
             } finally {
-                memuat = false;
+                sedangMemuat = false;
                 $('btnRefresh').disabled = false;
             }
         }
 
+        // Logout dengan penanganan error.
         $('btnLogout').addEventListener('click', async () => {
             $('btnLogout').disabled = true;
 
             try {
-                const hasil = await logout();
-
-                if (!hasil.success) {
-                    throw new Error(hasil.message || 'Logout gagal.');
-                }
-
+                await logout();
                 window.location.replace('index.html');
             } catch (error) {
-                status(error.message, true);
+                tampilkanStatus(
+                    'Logout gagal: ' + error.message,
+                    true
+                );
                 $('btnLogout').disabled = false;
             }
         });
@@ -182,7 +197,9 @@
         $('btnRefresh').addEventListener('click', muatDashboard);
 
         $('btnKas').addEventListener('click', () => {
-            status('Halaman Iuran & Kas belum dibuat.');
+            tampilkanStatus(
+                'Menu Iuran & Kas RT belum terhubung ke halaman transaksi.'
+            );
         });
 
         muatDashboard();
