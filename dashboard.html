@@ -1,79 +1,347 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#059669">
     <title>Dashboard Pengurus - RT Digital</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
 </head>
-<body class="bg-slate-100 p-4 min-h-screen">
-    <div class="max-w-md mx-auto space-y-4">
-        <!-- Header Dashboard -->
-        <div class="flex justify-between items-center bg-emerald-600 text-white p-4 rounded-xl shadow">
+
+<body class="bg-slate-100 min-h-screen p-4">
+    <main class="max-w-md mx-auto space-y-4">
+
+        <!-- Header -->
+        <header class="flex justify-between items-center bg-emerald-600
+                       text-white p-4 rounded-xl shadow">
             <div>
                 <h1 class="font-bold text-lg">Dashboard RT Digital</h1>
-                <p class="text-xs opacity-90">Selamat Datang, Pengurus</p>
+                <p id="infoWilayah" class="text-xs opacity-90">
+                    Portal Pengurus RT
+                </p>
             </div>
-            <button id="btnLogout" class="bg-emerald-700 text-xs px-3 py-2 rounded-lg hover:bg-emerald-800">Keluar</button>
-        </div>
-
-        <!-- Ringkasan Data -->
-        <div class="grid grid-cols-2 gap-3">
-            <a href="warga.html" class="bg-white p-4 rounded-xl shadow border-l-4 border-emerald-500 block hover:bg-slate-50">
-                <p class="text-xs text-slate-500 font-semibold">Total Warga</p>
-                <p class="text-xl font-bold text-slate-800 mt-1" id="totalWarga">0 Jiwa</p>
-            </a>
-            <a href="warga.html" class="bg-white p-4 rounded-xl shadow border-l-4 border-blue-500 block hover:bg-slate-50">
-                <p class="text-xs text-slate-500 font-semibold">Total KK</p>
-                <p class="text-xl font-bold text-slate-800 mt-1" id="totalKK">0 KK</p>
-            </a>
-        </div>
-
-        <div class="bg-white p-4 rounded-xl shadow border-l-4 border-amber-500">
-            <p class="text-xs text-slate-500 font-semibold">Saldo Kas RT</p>
-            <p class="text-2xl font-bold text-slate-800 mt-1" id="saldoKas">Rp 0</p>
-        </div>
-
-        <!-- Navigasi Cepat -->
-        <div class="grid grid-cols-2 gap-3 pt-2">
-            <a href="warga.html" class="bg-white p-3 rounded-xl shadow text-center text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200">
-                👥 Data Warga & KK
-            </a>
-            <button onclick="alert('Menu Iuran & Kas')" class="bg-white p-3 rounded-xl shadow text-center text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200">
-                💰 Iuran & Kas RT
+            <button id="btnLogout" type="button"
+                class="bg-emerald-700 text-xs px-3 py-2 rounded-lg
+                       hover:bg-emerald-800 disabled:opacity-50">
+                Keluar
             </button>
+        </header>
+
+        <!-- Status -->
+        <div id="statusDashboard" role="status" aria-live="polite"
+            class="hidden bg-white p-3 rounded-xl border
+                   text-sm text-slate-600">
         </div>
-    </div>
+
+        <!-- Ringkasan -->
+        <section class="grid grid-cols-2 gap-3">
+            <a href="warga.html"
+                class="bg-white p-4 rounded-xl shadow
+                       border-l-4 border-emerald-500
+                       hover:bg-emerald-50">
+                <p class="text-xs text-slate-500 font-semibold">
+                    Total Warga Aktif
+                </p>
+                <p id="totalWarga"
+                    class="text-xl font-bold text-slate-800 mt-1">
+                    Memuat...
+                </p>
+            </a>
+
+            <a href="warga.html"
+                class="bg-white p-4 rounded-xl shadow
+                       border-l-4 border-blue-500
+                       hover:bg-blue-50">
+                <p class="text-xs text-slate-500 font-semibold">
+                    Total KK
+                </p>
+                <p id="totalKK"
+                    class="text-xl font-bold text-slate-800 mt-1">
+                    Memuat...
+                </p>
+            </a>
+        </section>
+
+        <!-- Saldo Kas -->
+        <section class="bg-white p-4 rounded-xl shadow
+                        border-l-4 border-amber-500">
+            <p class="text-xs text-slate-500 font-semibold">
+                Saldo Kas RT
+            </p>
+            <p id="saldoKas"
+                class="text-2xl font-bold text-slate-800 mt-1">
+                Memuat...
+            </p>
+            <p class="text-xs text-slate-500 mt-2">
+                Sumber: data transaksi kas RT
+            </p>
+        </section>
+
+        <!-- Navigasi -->
+        <section>
+            <h2 class="font-bold text-slate-700 mb-3">
+                Menu Utama
+            </h2>
+
+            <div class="grid grid-cols-2 gap-3">
+                <a href="warga.html"
+                    class="bg-white p-4 rounded-xl shadow
+                           text-center text-sm font-semibold
+                           text-slate-700 border border-slate-200
+                           hover:bg-emerald-50">
+                    <span class="block text-2xl mb-2">👥</span>
+                    Data Warga & KK
+                </a>
+
+                <button id="btnKas" type="button"
+                    class="bg-white p-4 rounded-xl shadow
+                           text-center text-sm font-semibold
+                           text-slate-700 border border-slate-200
+                           hover:bg-emerald-50">
+                    <span class="block text-2xl mb-2">💰</span>
+                    Iuran & Kas RT
+                </button>
+            </div>
+        </section>
+
+        <!-- Muat ulang -->
+        <button id="btnRefresh" type="button"
+            class="w-full bg-white p-3 rounded-xl shadow
+                   border border-slate-200 text-sm font-semibold
+                   text-emerald-700 hover:bg-emerald-50">
+            ↻ Perbarui Data
+        </button>
+
+        <footer class="text-center text-xs text-slate-500 py-3">
+            Portal RT Digital · Data dari Supabase
+        </footer>
+    </main>
 
     <script>
-        async function muatDashboard() {
-            try {
-                // Ambil data saldo kas
-                const { data: kas } = await supabase.from('view_saldo_kas').select('*').single();
-                if (kas) {
-                    document.getElementById('saldoKas').innerText = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(kas.saldo_saat_ini);
-                }
+    (() => {
+        'use strict';
 
-                // Ambil jumlah KK
-                const { count: kkCount } = await supabase.from('households').select('*', { count: 'exact', head: true });
-                document.getElementById('totalKK').innerText = `${kkCount || 0} KK`;
+        const el = (id) => document.getElementById(id);
 
-                // Ambil jumlah Warga
-                const { count: wargaCount } = await supabase.from('residents').select('*', { count: 'exact', head: true });
-                document.getElementById('totalWarga').innerText = `${wargaCount || 0} Jiwa`;
-            } catch (e) {
-                console.error('Error muat dashboard:', e);
+        let client = null;
+        let sedangMemuat = false;
+
+        function tampilkanStatus(pesan, jenis = 'info') {
+            const kotak = el('statusDashboard');
+
+            kotak.textContent = pesan;
+            kotak.classList.remove(
+                'hidden', 'text-red-700', 'text-emerald-700',
+                'text-slate-600', 'border-red-200',
+                'border-emerald-200'
+            );
+
+            if (jenis === 'error') {
+                kotak.classList.add('text-red-700', 'border-red-200');
+            } else if (jenis === 'success') {
+                kotak.classList.add(
+                    'text-emerald-700', 'border-emerald-200'
+                );
+            } else {
+                kotak.classList.add('text-slate-600');
             }
         }
 
-        document.getElementById('btnLogout').addEventListener('click', async () => {
-            await supabase.auth.signOut();
-            window.location.href = 'index.html';
+        function formatRupiah(nilai) {
+            const angka = Number(nilai);
+
+            if (!Number.isFinite(angka)) {
+                throw new Error('Nilai saldo tidak valid.');
+            }
+
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                maximumFractionDigits: 0
+            }).format(angka);
+        }
+
+        function tampilkanAngka(id, jumlah, satuan) {
+            el(id).textContent =
+                Number.isFinite(jumlah)
+                    ? `${jumlah.toLocaleString('id-ID')} ${satuan}`
+                    : 'Tidak tersedia';
+        }
+
+        async function periksaLogin() {
+            // app.js harus membuat client Supabase bernama "supabase".
+            if (typeof supabase === 'undefined' ||
+                !supabase ||
+                typeof supabase.auth?.getSession !== 'function') {
+                tampilkanStatus(
+                    'Koneksi Supabase belum tersedia. Periksa app.js dan konfigurasi proyek.',
+                    'error'
+                );
+                return false;
+            }
+
+            client = supabase;
+
+            const { data, error } =
+                await client.auth.getSession();
+
+            if (error) {
+                throw error;
+            }
+
+            if (!data.session) {
+                window.location.replace('index.html');
+                return false;
+            }
+
+            return true;
+        }
+
+        async function muatDashboard() {
+            if (sedangMemuat) return;
+            sedangMemuat = true;
+
+            el('btnRefresh').disabled = true;
+            el('totalWarga').textContent = 'Memuat...';
+            el('totalKK').textContent = 'Memuat...';
+            el('saldoKas').textContent = 'Memuat...';
+
+            try {
+                const loginValid = await periksaLogin();
+
+                if (!loginValid) return;
+
+                // Jalankan pembacaan data secara bersamaan.
+                const [hasilKK, hasilWarga, hasilKas] =
+                    await Promise.all([
+                        client
+                            .from('households')
+                            .select('id', {
+                                count: 'exact',
+                                head: true
+                            }),
+
+                        client
+                            .from('residents')
+                            .select('id', {
+                                count: 'exact',
+                                head: true
+                            })
+                            .eq('is_active', true),
+
+                        client
+                            .from('view_saldo_kas')
+                            .select('saldo_saat_ini')
+                            .maybeSingle()
+                    ]);
+
+                // Jangan menyamarkan error sebagai angka nol.
+                if (hasilKK.error) {
+                    throw new Error(
+                        'Data KK gagal dimuat: ' + hasilKK.error.message
+                    );
+                }
+
+                if (hasilWarga.error) {
+                    throw new Error(
+                        'Data warga gagal dimuat: ' +
+                        hasilWarga.error.message
+                    );
+                }
+
+                if (hasilKas.error) {
+                    throw new Error(
+                        'Saldo kas gagal dimuat: ' +
+                        hasilKas.error.message
+                    );
+                }
+
+                tampilkanAngka(
+                    'totalKK',
+                    hasilKK.count ?? 0,
+                    'KK'
+                );
+
+                tampilkanAngka(
+                    'totalWarga',
+                    hasilWarga.count ?? 0,
+                    'Jiwa'
+                );
+
+                if (hasilKas.data) {
+                    el('saldoKas').textContent =
+                        formatRupiah(hasilKas.data.saldo_saat_ini);
+                } else {
+                    el('saldoKas').textContent = 'Belum tersedia';
+                }
+
+                tampilkanStatus(
+                    'Data dashboard berhasil diperbarui.',
+                    'success'
+                );
+
+            } catch (error) {
+                console.error('Gagal memuat dashboard:', error);
+
+                tampilkanStatus(
+                    error.message ||
+                    'Terjadi kesalahan saat memuat dashboard.',
+                    'error'
+                );
+
+                el('totalWarga').textContent = 'Gagal dimuat';
+                el('totalKK').textContent = 'Gagal dimuat';
+                el('saldoKas').textContent = 'Gagal dimuat';
+
+            } finally {
+                sedangMemuat = false;
+                el('btnRefresh').disabled = false;
+            }
+        }
+
+        el('btnLogout').addEventListener('click', async () => {
+            if (!client) {
+                window.location.replace('index.html');
+                return;
+            }
+
+            const tombol = el('btnLogout');
+            tombol.disabled = true;
+            tombol.textContent = 'Keluar...';
+
+            try {
+                const { error } = await client.auth.signOut();
+
+                if (error) throw error;
+
+                window.location.replace('index.html');
+            } catch (error) {
+                console.error('Gagal keluar:', error);
+
+                tampilkanStatus(
+                    'Gagal keluar: ' + error.message,
+                    'error'
+                );
+
+                tombol.disabled = false;
+                tombol.textContent = 'Keluar';
+            }
+        });
+
+        el('btnRefresh').addEventListener('click', muatDashboard);
+
+        el('btnKas').addEventListener('click', () => {
+            tampilkanStatus(
+                'Menu Iuran & Kas belum tersedia. Fitur ini perlu dibuat sebelum dapat digunakan.'
+            );
         });
 
         muatDashboard();
+    })();
     </script>
 </body>
 </html>
