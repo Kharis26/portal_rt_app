@@ -1,0 +1,288 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iuran & Kas RT Digital 05</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background:#f1f5f9; }
+    input, select, textarea { width:100%; border:1px solid #cbd5e1; border-radius:9px; padding:10px; background:white; }
+    th, td { padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:left; }
+    @media print {
+      .no-print { display:none !important; }
+      body { background:white; padding:0; }
+      .print-area { box-shadow:none !important; border:0 !important; }
+    }
+  </style>
+</head>
+<body class="p-4 min-h-screen">
+  <main class="max-w-4xl mx-auto space-y-4">
+    <header class="bg-emerald-700 text-white p-5 rounded-2xl flex items-center justify-between gap-3">
+      <div>
+        <h1 class="font-bold text-xl">Iuran & Kas RT 05</h1>
+        <p class="text-sm opacity-90">Pencatatan keuangan terhubung ke Supabase</p>
+      </div>
+      <a href="dashboard.html" class="bg-white text-emerald-800 px-3 py-2 rounded-lg text-sm">Kembali</a>
+    </header>
+
+    <section id="status" class="bg-white rounded-xl p-4 text-sm text-slate-600">
+      Memeriksa sesi login dan memuat transaksi...
+    </section>
+
+    <section id="app" class="hidden space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <p class="text-sm text-slate-500">Total Pemasukan</p>
+          <p id="totalMasuk" class="font-bold text-xl text-emerald-700">Rp0</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <p class="text-sm text-slate-500">Total Pengeluaran</p>
+          <p id="totalKeluar" class="font-bold text-xl text-rose-600">Rp0</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4">
+          <p class="text-sm text-slate-500">Saldo Kas</p>
+          <p id="saldo" class="font-bold text-xl text-slate-900">Rp0</p>
+        </div>
+      </div>
+
+      <section class="bg-white rounded-xl shadow-sm p-4">
+        <h2 class="font-bold text-lg mb-3">Catat Transaksi</h2>
+        <form id="formKas" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="text-sm">Jenis transaksi</label>
+            <select id="tipe" required>
+              <option value="Pemasukan">Pemasukan</option>
+              <option value="Pengeluaran">Pengeluaran</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm">Tanggal</label>
+            <input id="tanggal" type="date" required>
+          </div>
+          <div>
+            <label class="text-sm">Kategori</label>
+            <select id="kategori" required>
+              <option value="Iuran warga">Iuran warga</option>
+              <option value="Sumbangan">Sumbangan</option>
+              <option value="Administrasi">Administrasi</option>
+              <option value="Kebersihan">Kebersihan</option>
+              <option value="Keamanan">Keamanan</option>
+              <option value="Kegiatan warga">Kegiatan warga</option>
+              <option value="Perbaikan">Perbaikan</option>
+              <option value="Lain-lain">Lain-lain</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm">Nominal (Rp)</label>
+            <input id="nominal" type="number" min="1" step="1" placeholder="Contoh: 60000" required>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="text-sm">Keterangan</label>
+            <textarea id="keterangan" rows="2" maxlength="1000" placeholder="Contoh: Iuran warga bulan Oktober" required></textarea>
+          </div>
+          <div class="sm:col-span-2 flex gap-2 flex-wrap">
+            <button id="simpan" type="submit" class="bg-emerald-600 text-white rounded-lg px-5 py-3 font-semibold">Simpan Transaksi</button>
+            <button type="reset" class="bg-slate-200 rounded-lg px-4 py-3">Kosongkan</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="bg-white rounded-xl shadow-sm p-4 print-area">
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+          <div>
+            <h2 class="font-bold text-lg">Riwayat Transaksi</h2>
+            <p class="text-xs text-slate-500">Data transaksi tersimpan di database</p>
+          </div>
+          <div class="no-print flex flex-wrap gap-2">
+            <input id="bulan" type="month" class="w-auto">
+            <button id="muat" class="bg-slate-700 text-white rounded-lg px-3 py-2">Muat Ulang</button>
+            <button id="cetak" class="bg-blue-600 text-white rounded-lg px-3 py-2">Cetak</button>
+          </div>
+        </div>
+        <p id="jumlah" class="text-sm text-slate-500 mb-2"></p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-100">
+              <tr>
+                <th>Tanggal</th><th>No. Transaksi</th><th>Jenis / Kategori</th><th>Keterangan</th><th class="text-right">Nominal</th>
+              </tr>
+            </thead>
+            <tbody id="daftar">
+              <tr><td colspan="5" class="text-center text-slate-500">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import { supabase } from './app.js';
+
+    const $ = id => document.getElementById(id);
+    const rupiah = n => new Intl.NumberFormat('id-ID', {
+      style:'currency', currency:'IDR', maximumFractionDigits:0
+    }).format(Number(n) || 0);
+
+    const hariIni = new Date();
+    const tanggalLokal = `${hariIni.getFullYear()}-${String(hariIni.getMonth()+1).padStart(2,'0')}-${String(hariIni.getDate()).padStart(2,'0')}`;
+    $('tanggal').value = tanggalLokal;
+    $('bulan').value = tanggalLokal.slice(0,7);
+
+    let transaksi = [];
+
+    function pesan(teks, error=false) {
+      $('status').textContent = teks;
+      $('status').className = `rounded-xl p-4 text-sm ${error ? 'bg-rose-50 text-rose-800' : 'bg-emerald-50 text-emerald-800'}`;
+    }
+
+    function aman(teks) {
+      const span = document.createElement('span');
+      span.textContent = teks == null ? '-' : String(teks);
+      return span;
+    }
+
+    function render() {
+      const totalMasuk = transaksi.filter(t => t.tipe_transaksi === 'Pemasukan')
+        .reduce((s,t) => s + Number(t.nominal), 0);
+      const totalKeluar = transaksi.filter(t => t.tipe_transaksi === 'Pengeluaran')
+        .reduce((s,t) => s + Number(t.nominal), 0);
+
+      $('totalMasuk').textContent = rupiah(totalMasuk);
+      $('totalKeluar').textContent = rupiah(totalKeluar);
+      $('saldo').textContent = rupiah(totalMasuk - totalKeluar);
+      $('jumlah').textContent = `${transaksi.length} transaksi ditampilkan`;
+
+      const tbody = $('daftar');
+      tbody.replaceChildren();
+
+      if (!transaksi.length) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 5;
+        td.className = 'text-center text-slate-500 py-5';
+        td.textContent = 'Belum ada transaksi pada periode ini.';
+        tr.append(td);
+        tbody.append(tr);
+        return;
+      }
+
+      transaksi.forEach(t => {
+        const tr = document.createElement('tr');
+        const tanggal = aman(t.tanggal_transaksi);
+        const nomor = aman(t.nomor_transaksi);
+        const jenis = document.createElement('td');
+        jenis.textContent = `${t.tipe_transaksi} / ${t.kategori}`;
+        jenis.className = t.tipe_transaksi === 'Pemasukan' ? 'text-emerald-700' : 'text-rose-700';
+        const keterangan = aman(t.keterangan);
+        const nominal = aman(rupiah(t.nominal));
+        nominal.className = 'text-right whitespace-nowrap font-semibold';
+        [tanggal,nomor,jenis,keterangan,nominal].forEach(el => {
+          const td = document.createElement('td');
+          td.append(el);
+          tr.append(td);
+        });
+        tbody.append(tr);
+      });
+    }
+
+    async function muatTransaksi() {
+      const { data: sesiData, error: sesiError } = await supabase.auth.getSession();
+      if (sesiError || !sesiData.session) {
+        $('app').classList.add('hidden');
+        pesan('Silakan login terlebih dahulu melalui halaman utama sebelum membuka Iuran & Kas RT.', true);
+        return;
+      }
+
+      const awal = $('bulan').value;
+      let query = supabase.from('cash_transactions')
+        .select('id,nomor_transaksi,tipe_transaksi,kategori,nominal,tanggal_transaksi,keterangan,created_at')
+        .order('tanggal_transaksi', { ascending:false })
+        .order('created_at', { ascending:false });
+
+      if (awal) {
+        const [tahun, bulan] = awal.split('-').map(Number);
+        const dari = `${awal}-01`;
+        const sampai = bulan === 12 ? `${tahun+1}-01-01` : `${tahun}-${String(bulan+1).padStart(2,'0')}-01`;
+        query = query.gte('tanggal_transaksi', dari).lt('tanggal_transaksi', sampai);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        $('app').classList.add('hidden');
+        pesan('Gagal membaca transaksi: ' + error.message, true);
+        return;
+      }
+
+      transaksi = data || [];
+      $('app').classList.remove('hidden');
+      pesan('Data transaksi berhasil dimuat dari Supabase.');
+      render();
+    }
+
+    $('formKas').addEventListener('submit', async event => {
+      event.preventDefault();
+
+      const { data: sesiData } = await supabase.auth.getSession();
+      const sesi = sesiData?.session;
+      if (!sesi) {
+        pesan('Sesi login habis. Silakan login ulang.', true);
+        return;
+      }
+
+      const nominal = Number($('nominal').value);
+      if (!Number.isSafeInteger(nominal) || nominal <= 0) {
+        pesan('Nominal harus berupa angka rupiah bulat lebih dari nol.', true);
+        return;
+      }
+
+      const { data: profil, error: profilError } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', sesi.user.id)
+        .maybeSingle();
+
+      if (profilError || profil?.role !== 'Ketua_RT') {
+        pesan('Akun ini tidak memiliki hak untuk mencatat transaksi.', true);
+        return;
+      }
+
+      const tombol = $('simpan');
+      tombol.disabled = true;
+      tombol.textContent = 'Menyimpan...';
+
+      const dataBaru = {
+        nomor_transaksi: `RT05-${Date.now()}`,
+        tipe_transaksi: $('tipe').value,
+        kategori: $('kategori').value,
+        nominal,
+        tanggal_transaksi: $('tanggal').value,
+        keterangan: $('keterangan').value.trim(),
+        petugas_id: sesi.user.id
+      };
+
+      try {
+        const { error } = await supabase.from('cash_transactions').insert(dataBaru);
+        if (error) throw error;
+        $('formKas').reset();
+        $('tanggal').value = tanggalLokal;
+        pesan('Transaksi berhasil disimpan.');
+        await muatTransaksi();
+      } catch (error) {
+        pesan('Transaksi gagal disimpan: ' + error.message, true);
+      } finally {
+        tombol.disabled = false;
+        tombol.textContent = 'Simpan Transaksi';
+      }
+    });
+
+    $('muat').addEventListener('click', muatTransaksi);
+    $('bulan').addEventListener('change', muatTransaksi);
+    $('cetak').addEventListener('click', () => window.print());
+
+    muatTransaksi();
+  </script>
+</body>
+</html>
