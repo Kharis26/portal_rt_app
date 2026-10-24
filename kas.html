@@ -1,4 +1,3 @@
-HTML
 
 <!DOCTYPE html>
 <html lang="id">
@@ -294,6 +293,12 @@ HTML
                        rounded-lg px-4 py-3">
           Cetak
         </button>
+
+        <button id="eksporCSV" type="button"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white
+                       rounded-lg px-4 py-3">
+          Ekspor Excel (CSV)
+        </button>
       </div>
 
       <p id="jumlah" class="text-sm text-slate-500 mb-3"></p>
@@ -319,11 +324,17 @@ HTML
       </div>
 
       <div class="ringkasan-bulan">
+        <p>Saldo awal bulan:
+          <strong id="saldoAwalBulan" class="text-slate-800">Rp0</strong>
+        </p>
         <p>Total pemasukan bulan ini:
           <strong id="masukBulan" class="text-emerald-700">Rp0</strong>
         </p>
         <p>Total pengeluaran bulan ini:
           <strong id="keluarBulan" class="text-rose-700">Rp0</strong>
+        </p>
+        <p>Saldo akhir bulan:
+          <strong id="saldoAkhirBulan" class="text-slate-900">Rp0</strong>
         </p>
       </div>
     </section>
@@ -430,6 +441,23 @@ function tampilkanRiwayat() {
 
   $('masukBulan').textContent = rupiah(masukBulan);
   $('keluarBulan').textContent = rupiah(keluarBulan);
+
+  let saldoAwal = 0;
+  if (bulan) {
+    const tanggalAwalBulan = `${bulan}-01`;
+    semuaTransaksi.forEach(t => {
+      const tanggalTransaksi = String(t.tanggal_transaksi || '').slice(0, 10);
+      if (tanggalTransaksi < tanggalAwalBulan) {
+        const nominal = Number(t.nominal || 0);
+        if (t.tipe_transaksi === 'Pemasukan') saldoAwal += nominal;
+        if (t.tipe_transaksi === 'Pengeluaran') saldoAwal -= nominal;
+      }
+    });
+  }
+
+  $('saldoAwalBulan').textContent = rupiah(saldoAwal);
+  $('saldoAkhirBulan').textContent =
+    rupiah(saldoAwal + masukBulan - keluarBulan);
 }
 
 async function muatTransaksi() {
@@ -450,17 +478,31 @@ async function muatTransaksi() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('cash_transactions')
-      .select(
-        'id,nomor_transaksi,tipe_transaksi,kategori,nominal,tanggal_transaksi,keterangan,created_at'
-      )
-      .order('tanggal_transaksi', { ascending: false })
-      .order('created_at', { ascending: false });
+    const gabungan = [];
+    const ukuranHalaman = 1000;
+    let awal = 0;
 
-    if (error) throw error;
+    while (true) {
+      const { data, error } = await supabase
+        .from('cash_transactions')
+        .select(
+          'id,nomor_transaksi,tipe_transaksi,kategori,nominal,tanggal_transaksi,keterangan,created_at'
+        )
+        .order('tanggal_transaksi', { ascending: false })
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(awal, awal + ukuranHalaman - 1);
 
-    semuaTransaksi = data || [];
+      if (error) throw error;
+
+      const halaman = data || [];
+      gabungan.push(...halaman);
+
+      if (halaman.length < ukuranHalaman) break;
+      awal += ukuranHalaman;
+    }
+
+    semuaTransaksi = gabungan;
     hitungSaldo();
     tampilkanRiwayat();
 
@@ -469,8 +511,11 @@ async function muatTransaksi() {
   } catch (error) {
     console.error('Gagal memuat transaksi:', error);
     $('app').classList.add('sembunyi');
-    pesan('Gagal memuat data: ' +
-      (error.message || 'Kesalahan tidak diketahui.'), true);
+    pesan(
+      'Gagal memuat data: ' +
+      (error.message || 'Kesalahan tidak diketahui.'),
+      true
+    );
   } finally {
     sedangMemuat = false;
     $('muat').disabled = false;
@@ -488,7 +533,6 @@ $('formKas').addEventListener('submit', async event => {
   const tipe = $('tipe').value;
   const keterangan = $('keterangan').value.trim();
 
-  // Perlindungan tambahan jika nilai kategori dimanipulasi.
   if (kategori.trim().toLowerCase() === 'iuran warga') {
     pesan(
       'Pembayaran iuran hanya boleh dicatat melalui menu Iuran Bulanan.',
@@ -543,7 +587,6 @@ $('formKas').addEventListener('submit', async event => {
       throw new Error('Sesi login habis. Silakan login ulang.');
     }
 
-    // UUID mengurangi risiko nomor transaksi bentrok.
     const nomor = 'RT05-KAS-' +
       crypto.randomUUID().replace(/-/g, '').toUpperCase();
 
@@ -586,6 +629,53 @@ $('formKas').addEventListener('submit', async event => {
 $('muat').addEventListener('click', muatTransaksi);
 $('bulan').addEventListener('change', tampilkanRiwayat);
 $('cetak').addEventListener('click', () => window.print());
+
+function eksporLaporanCSV() {
+  const bulan = $('bulan').value;
+  const daftar = semuaTransaksi.filter(t =>
+    !bulan || String(t.tanggal_transaksi || '').slice(0, 7) === bulan
+  );
+
+  const kolom = [
+    'Tanggal',
+    'Nomor Transaksi',
+    'Jenis',
+    'Kategori',
+    'Keterangan',
+    'Nominal (Rp)'
+  ];
+
+  const amankanCSV = nilai => {
+    let teks = String(nilai ?? '');
+    if (/^[=+\-@\t\r]/.test(teks)) teks = "'" + teks;
+    return '"' + teks.replace(/"/g, '""') + '"';
+  };
+
+  const baris = [kolom, ...daftar.map(t => [
+    t.tanggal_transaksi || '',
+    t.nomor_transaksi || '',
+    t.tipe_transaksi || '',
+    t.kategori || '',
+    t.keterangan || '',
+    Number(t.nominal || 0)
+  ])];
+
+  const csv = '\uFEFF' + baris
+    .map(row => row.map(amankanCSV).join(';'))
+    .join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `laporan-kas-RT05-${bulan || 'semua-periode'}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$('eksporCSV').addEventListener('click', eksporLaporanCSV);
 
 $('kosongkan').addEventListener('click', () => {
   setTimeout(() => {
