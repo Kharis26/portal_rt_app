@@ -1,22 +1,25 @@
+HTML
 
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Warga & KK - RT Digital</title>
+    <meta name="theme-color" content="#f1f5f9">
+    <title>Data Warga & KK - RT Digital 05</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-slate-100 p-4 min-h-screen pb-20">
-    <div class="max-w-md mx-auto space-y-4">
+    <main class="max-w-md mx-auto space-y-4">
 
-        <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow">
+        <!-- Header -->
+        <header class="flex justify-between items-center bg-white p-4 rounded-xl shadow">
             <div>
                 <h1 class="font-bold text-slate-800 text-lg">
                     Data Warga & KK
                 </h1>
-                <p class="text-xs text-slate-500">
+                <p class="text-xs text-slate-500 mt-1">
                     <span id="totalKkHead">0</span> KK |
                     <span id="totalWargaHead">0</span> Jiwa
                 </p>
@@ -26,42 +29,48 @@
                class="text-xs bg-slate-200 px-3 py-2 rounded-lg text-slate-700 font-medium">
                 Kembali
             </a>
-        </div>
+        </header>
 
+        <!-- Pencarian dan tombol tambah -->
         <div class="flex gap-2">
             <input
-                type="text"
+                type="search"
                 id="searchInput"
                 placeholder="Cari nama / blok..."
-                class="w-full min-w-0 p-2.5 border border-slate-300 rounded-lg text-xs bg-white"
+                aria-label="Cari nama warga atau blok"
+                class="w-full min-w-0 p-3 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
 
             <button
                 id="btnTambah"
                 type="button"
-                class="bg-emerald-600 text-white text-xs px-4 py-2.5 rounded-lg font-semibold whitespace-nowrap">
+                class="bg-emerald-600 text-white text-xs px-4 py-2 rounded-lg font-semibold whitespace-nowrap">
                 + Tambah KK
             </button>
         </div>
 
+        <!-- Status -->
         <div id="pesanStatus"
-             class="hidden bg-white p-3 rounded-xl text-sm"
-             role="status">
+             class="hidden bg-white p-3 rounded-xl text-sm break-words"
+             role="status"
+             aria-live="polite">
         </div>
 
-        <div id="daftarWarga" class="space-y-3">
-            <p class="text-xs text-slate-500 text-center py-4">
-                Memuat data warga...
+        <!-- Daftar KK -->
+        <section id="daftarWarga" class="space-y-3">
+            <p class="text-sm text-slate-500 text-center py-4">
+                Menyiapkan halaman...
             </p>
-        </div>
+        </section>
 
+        <!-- Muat ulang -->
         <button
             id="btnMuatUlang"
             type="button"
             class="w-full bg-white p-3 rounded-xl shadow text-emerald-700 font-semibold text-sm">
             ↻ Muat Ulang Data
         </button>
-    </div>
+    </main>
 
     <script type="module">
         import { supabase } from './app.js';
@@ -69,33 +78,32 @@
         const container = document.getElementById('daftarWarga');
         const statusBox = document.getElementById('pesanStatus');
         const searchInput = document.getElementById('searchInput');
+        const totalKkHead = document.getElementById('totalKkHead');
+        const totalWargaHead = document.getElementById('totalWargaHead');
+        const btnMuatUlang = document.getElementById('btnMuatUlang');
 
         let semuaKK = [];
+        let sedangMemuat = false;
 
-        function tampilkanStatus(pesan, jenis = 'info') {
-            statusBox.classList.remove(
-                'hidden',
-                'text-red-700',
-                'text-emerald-700',
-                'text-slate-600'
-            );
-
-            statusBox.classList.add(
-                jenis === 'error'
-                    ? 'text-red-700'
-                    : jenis === 'success'
-                    ? 'text-emerald-700'
-                    : 'text-slate-600'
-            );
-
-            statusBox.textContent = pesan;
-        }
-
-        function buatElemen(tag, className, teks) {
+        function buatElemen(tag, className = '', teks = '') {
             const el = document.createElement(tag);
             el.className = className;
-            el.textContent = teks ?? '';
+            el.textContent = teks;
             return el;
+        }
+
+        function tampilkanStatus(pesan, jenis = 'info') {
+            statusBox.className = 'bg-white p-3 rounded-xl text-sm break-words';
+
+            if (jenis === 'error') {
+                statusBox.classList.add('text-red-700');
+            } else if (jenis === 'success') {
+                statusBox.classList.add('text-emerald-700');
+            } else {
+                statusBox.classList.add('text-slate-600');
+            }
+
+            statusBox.textContent = pesan;
         }
 
         function formatNIK(nik) {
@@ -103,56 +111,151 @@
 
             const nilai = String(nik);
 
-            if (nilai.length < 8) return 'NIK: ' + nilai;
+            if (nilai.length < 8) {
+                return 'NIK: ' + nilai;
+            }
 
-            return nilai.slice(0, 4)
-                + '••••••••'
-                + nilai.slice(-4);
+            return nilai.slice(0, 4) +
+                '••••••••' +
+                nilai.slice(-4);
+        }
+
+        function formatError(error) {
+            if (!error) return 'Kesalahan tidak diketahui.';
+
+            const kode = error.code ? '[' + error.code + '] ' : '';
+            return kode + (error.message || String(error));
+        }
+
+        async function denganBatasWaktu(promise, nama, ms = 15000) {
+            let timer;
+
+            try {
+                return await Promise.race([
+                    promise,
+                    new Promise((_, reject) => {
+                        timer = setTimeout(() => {
+                            reject(new Error(
+                                nama + ' tidak merespons dalam 15 detik. Periksa koneksi internet.'
+                            ));
+                        }, ms);
+                    })
+                ]);
+            } finally {
+                clearTimeout(timer);
+            }
         }
 
         async function muatDataWarga() {
+            if (sedangMemuat) return;
+
+            sedangMemuat = true;
+            btnMuatUlang.disabled = true;
+            btnMuatUlang.textContent = 'Memuat data...';
+
             container.replaceChildren(
                 buatElemen(
                     'p',
-                    'text-xs text-slate-500 text-center py-4',
-                    'Memuat data warga...'
+                    'text-sm text-slate-500 text-center py-4',
+                    'Memuat data KK...'
                 )
             );
 
-            tampilkanStatus('Menghubungkan ke database...');
+            tampilkanStatus('Menghubungkan ke Supabase...');
 
             try {
-                const { data, error } = await supabase
-                    .from('households')
-                    .select(`
-                        id,
-                        blok,
-                        status_hunian,
-                        no_kk,
-                        residents (
-                            id,
-                            nama_lengkap,
-                            status_keluarga,
-                            nik,
-                            is_active
-                        )
-                    `)
-                    .order('blok', { ascending: true });
+                /*
+                 * TAHAP 1:
+                 * Baca tabel households saja, tanpa relasi residents.
+                 * Ini membantu membedakan masalah akses KK dari masalah relasi.
+                 */
+                const hasilKK = await denganBatasWaktu(
+                    supabase
+                        .from('households')
+                        .select('id, blok, status_hunian, no_kk')
+                        .order('blok', { ascending: true }),
+                    'Data KK'
+                );
 
-                if (error) {
-                    throw error;
+                if (hasilKK.error) {
+                    throw new Error(
+                        'Gagal membaca tabel households: ' +
+                        formatError(hasilKK.error)
+                    );
                 }
 
-                if (!Array.isArray(data)) {
+                if (!Array.isArray(hasilKK.data)) {
                     throw new Error(
                         'Respons data KK tidak sesuai format.'
                     );
                 }
 
-                semuaKK = data.map(kk => ({
+                const dataKK = hasilKK.data;
+
+                /*
+                 * TAHAP 2:
+                 * Jika tidak ada KK yang terlihat oleh aplikasi,
+                 * tampilkan status khusus. Jangan menganggapnya sukses.
+                 */
+                if (dataKK.length === 0) {
+                    semuaKK = [];
+                    totalKkHead.textContent = '0';
+                    totalWargaHead.textContent = '0';
+
+                    container.replaceChildren(
+                        buatElemen(
+                            'div',
+                            'bg-white p-4 rounded-xl shadow text-center text-sm text-slate-600',
+                            'Query berhasil tetapi tidak ada KK yang dapat dibaca oleh aplikasi. Periksa sesi login dan kebijakan akses Supabase.'
+                        )
+                    );
+
+                    tampilkanStatus(
+                        'Data KK kosong pada hasil aplikasi. Database sebelumnya menunjukkan 3 KK; kita perlu memeriksa akses baca dari website.',
+                        'error'
+                    );
+
+                    return;
+                }
+
+                /*
+                 * TAHAP 3:
+                 * Ambil data warga secara terpisah.
+                 * Tidak memakai nested select residents(...).
+                 */
+                const idKK = dataKK.map(kk => kk.id);
+
+                const hasilWarga = await denganBatasWaktu(
+                    supabase
+                        .from('residents')
+                        .select(
+                            'id, household_id, nama_lengkap, status_keluarga, nik, is_active'
+                        )
+                        .in('household_id', idKK),
+                    'Data warga'
+                );
+
+                if (hasilWarga.error) {
+                    throw new Error(
+                        'Data KK terbaca, tetapi data warga gagal dimuat: ' +
+                        formatError(hasilWarga.error)
+                    );
+                }
+
+                const daftarWarga = Array.isArray(hasilWarga.data)
+                    ? hasilWarga.data
+                    : [];
+
+                /*
+                 * TAHAP 4:
+                 * Hubungkan warga ke KK melalui household_id.
+                 */
+                semuaKK = dataKK.map(kk => ({
                     ...kk,
-                    residents: (kk.residents || []).filter(
-                        warga => warga.is_active === true
+                    residents: daftarWarga.filter(
+                        warga =>
+                            warga.household_id === kk.id &&
+                            warga.is_active === true
                     )
                 }));
 
@@ -161,16 +264,14 @@
                     0
                 );
 
-                document.getElementById('totalKkHead').textContent =
-                    semuaKK.length;
-
-                document.getElementById('totalWargaHead').textContent =
-                    totalWarga;
+                totalKkHead.textContent = String(semuaKK.length);
+                totalWargaHead.textContent = String(totalWarga);
 
                 tampilkanDaftar();
 
                 tampilkanStatus(
-                    'Data berhasil dimuat dari Supabase.',
+                    'Berhasil membaca ' + semuaKK.length +
+                    ' KK dan ' + totalWarga + ' warga aktif.',
                     'success'
                 );
 
@@ -178,22 +279,26 @@
                 console.error('Gagal memuat Data Warga & KK:', error);
 
                 semuaKK = [];
-                document.getElementById('totalKkHead').textContent = '0';
-                document.getElementById('totalWargaHead').textContent = '0';
+                totalKkHead.textContent = '0';
+                totalWargaHead.textContent = '0';
 
                 container.replaceChildren(
                     buatElemen(
-                        'p',
-                        'bg-white p-4 rounded-xl shadow text-sm text-red-700',
-                        'Gagal memuat data: ' +
-                        (error.message || 'Kesalahan tidak diketahui')
+                        'div',
+                        'bg-white p-4 rounded-xl shadow text-sm text-red-700 break-words',
+                        formatError(error)
                     )
                 );
 
                 tampilkanStatus(
-                    'Pemuatan data gagal. Periksa pesan error pada halaman.',
+                    'Pemuatan data gagal. Baca pesan error di atas untuk menentukan perbaikannya.',
                     'error'
                 );
+
+            } finally {
+                sedangMemuat = false;
+                btnMuatUlang.disabled = false;
+                btnMuatUlang.textContent = '↻ Muat Ulang Data';
             }
         }
 
@@ -202,8 +307,10 @@
 
             const hasil = semuaKK.filter(kk => {
                 const blok = String(kk.blok ?? '').toLowerCase();
+                const noKK = String(kk.no_kk ?? '').toLowerCase();
 
                 const cocokBlok = blok.includes(kata);
+                const cocokNomor = noKK.includes(kata);
 
                 const cocokNama = kk.residents.some(warga =>
                     String(warga.nama_lengkap ?? '')
@@ -211,7 +318,7 @@
                         .includes(kata)
                 );
 
-                return !kata || cocokBlok || cocokNama;
+                return !kata || cocokBlok || cocokNomor || cocokNama;
             });
 
             container.replaceChildren();
@@ -222,7 +329,7 @@
                         'div',
                         'bg-white p-4 rounded-xl shadow text-center text-sm text-slate-500',
                         semuaKK.length === 0
-                            ? 'Belum ada data KK.'
+                            ? 'Belum ada KK yang dapat ditampilkan.'
                             : 'Tidak ada data yang cocok dengan pencarian.'
                     )
                 );
@@ -232,24 +339,28 @@
             hasil.forEach(kk => {
                 const kepala = kk.residents.find(
                     warga =>
-                        warga.status_keluarga === 'Kepala Keluarga'
+                        String(warga.status_keluarga || '')
+                            .toLowerCase() === 'kepala keluarga'
                 );
 
-                const kartu = document.createElement('div');
-                kartu.className = 'bg-white p-4 rounded-xl shadow';
+                const kartu = buatElemen(
+                    'article',
+                    'bg-white p-4 rounded-xl shadow'
+                );
 
-                const barisAtas = document.createElement('div');
-                barisAtas.className =
-                    'flex justify-between items-start gap-2';
+                const barisAtas = buatElemen(
+                    'div',
+                    'flex justify-between items-start gap-2'
+                );
 
-                const bagianNama = document.createElement('div');
-                bagianNama.className = 'min-w-0';
+                const bagianNama = buatElemen('div', 'min-w-0');
 
                 bagianNama.appendChild(
                     buatElemen(
                         'h3',
                         'font-bold text-sm text-slate-800 break-words',
-                        kepala?.nama_lengkap || 'Kepala keluarga belum diisi'
+                        kepala?.nama_lengkap ||
+                        'Kepala keluarga belum diisi'
                     )
                 );
 
@@ -268,6 +379,16 @@
                         kk.residents.length + ' warga aktif'
                     )
                 );
+
+                if (kk.no_kk) {
+                    bagianNama.appendChild(
+                        buatElemen(
+                            'p',
+                            'text-xs text-slate-400 mt-1',
+                            'Nomor KK: ' + String(kk.no_kk)
+                        )
+                    );
+                }
 
                 const statusHunian = kk.status_hunian || 'Belum diisi';
 
@@ -293,9 +414,10 @@
                     );
                 }
 
-                const daftarAnggota = document.createElement('div');
-                daftarAnggota.className =
-                    'border-t border-slate-100 mt-3 pt-3 space-y-2';
+                const daftarAnggota = buatElemen(
+                    'div',
+                    'border-t border-slate-100 mt-3 pt-3 space-y-2'
+                );
 
                 if (kk.residents.length === 0) {
                     daftarAnggota.appendChild(
@@ -307,13 +429,15 @@
                     );
                 } else {
                     kk.residents.forEach(warga => {
-                        const nama = warga.nama_lengkap || 'Nama belum diisi';
-                        const hubungan = warga.status_keluarga || 'Anggota';
+                        const nama =
+                            warga.nama_lengkap || 'Nama belum diisi';
+                        const hubungan =
+                            warga.status_keluarga || 'Anggota';
 
                         daftarAnggota.appendChild(
                             buatElemen(
                                 'p',
-                                'text-xs text-slate-700',
+                                'text-xs text-slate-700 break-words',
                                 nama + ' — ' + hubungan
                             )
                         );
@@ -327,8 +451,7 @@
 
         searchInput.addEventListener('input', tampilkanDaftar);
 
-        document.getElementById('btnMuatUlang')
-            .addEventListener('click', muatDataWarga);
+        btnMuatUlang.addEventListener('click', muatDataWarga);
 
         document.getElementById('btnTambah')
             .addEventListener('click', () => {
