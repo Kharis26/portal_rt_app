@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -190,7 +189,7 @@
 
     <section class="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <div class="kartu">
-        <p class="text-sm text-slate-500">Total Seluruh Pemasukan</p>
+        <p class="text-sm text-slate-500">Total Pemasukan Operasional</p>
         <p id="totalMasuk"
            class="text-xl font-bold text-emerald-700 mt-2">Rp0</p>
       </div>
@@ -327,6 +326,9 @@
         <p>Saldo awal bulan:
           <strong id="saldoAwalBulan" class="text-slate-800">Rp0</strong>
         </p>
+        <p>Saldo awal kas dicatat bulan ini:
+          <strong id="saldoAwalDicatatBulan" class="text-slate-800">Rp0</strong>
+        </p>
         <p>Total pemasukan bulan ini:
           <strong id="masukBulan" class="text-emerald-700">Rp0</strong>
         </p>
@@ -385,9 +387,22 @@ function tambahSel(tr, nilai, kelas = '') {
   return td;
 }
 
+function kategoriSaldoAwal(transaksi) {
+  return String(transaksi.kategori || '').trim().toLowerCase() ===
+    'saldo awal kas rt';
+}
+
 function hitungSaldo() {
+  // Saldo awal bukan pemasukan operasional, tetapi tetap menambah saldo kas.
+  const saldoAwal = semuaTransaksi
+    .filter(kategoriSaldoAwal)
+    .reduce((total, t) => {
+      const nominal = Number(t.nominal || 0);
+      return total + (t.tipe_transaksi === 'Pengeluaran' ? -nominal : nominal);
+    }, 0);
+
   const masuk = semuaTransaksi
-    .filter(t => t.tipe_transaksi === 'Pemasukan')
+    .filter(t => t.tipe_transaksi === 'Pemasukan' && !kategoriSaldoAwal(t))
     .reduce((total, t) => total + Number(t.nominal || 0), 0);
 
   const keluar = semuaTransaksi
@@ -396,7 +411,7 @@ function hitungSaldo() {
 
   $('totalMasuk').textContent = rupiah(masuk);
   $('totalKeluar').textContent = rupiah(keluar);
-  $('saldo').textContent = rupiah(masuk - keluar);
+  $('saldo').textContent = rupiah(saldoAwal + masuk - keluar);
 }
 
 function tampilkanRiwayat() {
@@ -413,11 +428,24 @@ function tampilkanRiwayat() {
 
   let masukBulan = 0;
   let keluarBulan = 0;
+  let saldoAwalDicatatBulan = 0;
 
   daftar.forEach(t => {
     const nominal = Number(t.nominal || 0);
-    if (t.tipe_transaksi === 'Pemasukan') masukBulan += nominal;
-    if (t.tipe_transaksi === 'Pengeluaran') keluarBulan += nominal;
+
+    if (kategoriSaldoAwal(t)) {
+      if (t.tipe_transaksi === 'Pengeluaran') {
+        saldoAwalDicatatBulan -= nominal;
+      } else {
+        saldoAwalDicatatBulan += nominal;
+      }
+    } else if (t.tipe_transaksi === 'Pemasukan') {
+      masukBulan += nominal;
+    }
+
+    if (t.tipe_transaksi === 'Pengeluaran' && !kategoriSaldoAwal(t)) {
+      keluarBulan += nominal;
+    }
 
     const tr = document.createElement('tr');
     tambahSel(tr, t.tanggal_transaksi, 'whitespace-nowrap');
@@ -442,22 +470,34 @@ function tampilkanRiwayat() {
   $('masukBulan').textContent = rupiah(masukBulan);
   $('keluarBulan').textContent = rupiah(keluarBulan);
 
+  // Saldo sebelum bulan terpilih:
+  // saldo awal yang sudah tercatat dan semua transaksi setelahnya.
   let saldoAwal = 0;
+
   if (bulan) {
     const tanggalAwalBulan = `${bulan}-01`;
+
     semuaTransaksi.forEach(t => {
       const tanggalTransaksi = String(t.tanggal_transaksi || '').slice(0, 10);
+
       if (tanggalTransaksi < tanggalAwalBulan) {
         const nominal = Number(t.nominal || 0);
-        if (t.tipe_transaksi === 'Pemasukan') saldoAwal += nominal;
-        if (t.tipe_transaksi === 'Pengeluaran') saldoAwal -= nominal;
+
+        if (kategoriSaldoAwal(t)) {
+          saldoAwal += t.tipe_transaksi === 'Pengeluaran' ? -nominal : nominal;
+        } else if (t.tipe_transaksi === 'Pemasukan') {
+          saldoAwal += nominal;
+        } else if (t.tipe_transaksi === 'Pengeluaran') {
+          saldoAwal -= nominal;
+        }
       }
     });
   }
 
   $('saldoAwalBulan').textContent = rupiah(saldoAwal);
+  $('saldoAwalDicatatBulan').textContent = rupiah(saldoAwalDicatatBulan);
   $('saldoAkhirBulan').textContent =
-    rupiah(saldoAwal + masukBulan - keluarBulan);
+    rupiah(saldoAwal + saldoAwalDicatatBulan + masukBulan - keluarBulan);
 }
 
 async function muatTransaksi() {
@@ -583,6 +623,7 @@ $('formKas').addEventListener('submit', async event => {
     if (sesiError) throw sesiError;
 
     const sesi = sesiData?.session;
+
     if (!sesi) {
       throw new Error('Sesi login habis. Silakan login ulang.');
     }
@@ -632,6 +673,7 @@ $('cetak').addEventListener('click', () => window.print());
 
 function eksporLaporanCSV() {
   const bulan = $('bulan').value;
+
   const daftar = semuaTransaksi.filter(t =>
     !bulan || String(t.tanggal_transaksi || '').slice(0, 7) === bulan
   );
@@ -647,7 +689,11 @@ function eksporLaporanCSV() {
 
   const amankanCSV = nilai => {
     let teks = String(nilai ?? '');
-    if (/^[=+\-@\t\r]/.test(teks)) teks = "'" + teks;
+
+    if (/^[=+\-@\t\r]/.test(teks)) {
+      teks = "'" + teks;
+    }
+
     return '"' + teks.replace(/"/g, '""') + '"';
   };
 
@@ -664,14 +710,20 @@ function eksporLaporanCSV() {
     .map(row => row.map(amankanCSV).join(';'))
     .join('\r\n');
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob([csv], {
+    type: 'text/csv;charset=utf-8;'
+  });
+
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
+
   link.href = url;
   link.download = `laporan-kas-RT05-${bulan || 'semua-periode'}.csv`;
+
   document.body.appendChild(link);
   link.click();
   link.remove();
+
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
