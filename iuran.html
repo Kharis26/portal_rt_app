@@ -1,0 +1,513 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#047857">
+  <title>Iuran Bulanan Warga - RT Digital 05</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background:#f1f5f9; }
+    input, select, textarea {
+      width:100%; border:1px solid #cbd5e1; border-radius:10px;
+      padding:10px; background:white; color:#0f172a;
+    }
+    th,td {
+      padding:10px; border-bottom:1px solid #e2e8f0;
+      text-align:left; vertical-align:top;
+    }
+    @media print {
+      .no-print { display:none !important; }
+      body { background:white; padding:0; }
+      main { max-width:none !important; }
+      section { box-shadow:none !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen p-3 sm:p-5">
+<main class="max-w-6xl mx-auto space-y-4">
+
+  <header class="bg-emerald-700 text-white rounded-2xl p-5
+                 flex items-center justify-between gap-3">
+    <div>
+      <h1 class="text-xl font-bold">Iuran Bulanan Warga</h1>
+      <p class="text-sm mt-1">Portal RT Digital 05</p>
+      <p class="text-sm">Tarif tetap Rp60.000 per KK per bulan</p>
+    </div>
+    <a href="dashboard.html"
+       class="bg-white text-emerald-800 rounded-lg px-4 py-3
+              font-semibold no-print">Kembali</a>
+  </header>
+
+  <div id="status" role="status" aria-live="polite"
+       class="bg-white rounded-xl p-4 text-sm">
+    Memeriksa sesi login...
+  </div>
+
+  <div id="app" class="hidden space-y-4">
+
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Jumlah Tagihan</p>
+        <p id="jumlahTagihan" class="text-2xl font-bold mt-2">0</p>
+      </div>
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Total Tagihan</p>
+        <p id="totalTagihan" class="text-xl font-bold mt-2">Rp0</p>
+      </div>
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Sudah Lunas</p>
+        <p id="totalLunas" class="text-xl font-bold text-emerald-700 mt-2">Rp0</p>
+      </div>
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <p class="text-sm text-slate-500">Belum Dibayar</p>
+        <p id="totalTunggakan" class="text-xl font-bold text-rose-600 mt-2">Rp0</p>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl p-4 shadow-sm no-print">
+      <h2 class="font-bold text-lg mb-3">Periode Iuran</h2>
+      <label for="periode" class="text-sm">Pilih bulan tagihan</label>
+      <div class="flex flex-col sm:flex-row gap-2 mt-1">
+        <input id="periode" type="month" required>
+        <button id="muat" type="button"
+          class="bg-slate-700 text-white rounded-lg px-5 py-3">
+          Muat Data
+        </button>
+        <button id="buatTagihan" type="button"
+          class="bg-emerald-600 text-white rounded-lg px-5 py-3">
+          Buat Tagihan Bulan Ini
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">
+        Pembuatan ulang pada bulan yang sama tidak membuat tagihan
+        ganda untuk KK yang sama.
+      </p>
+    </section>
+
+    <section class="bg-white rounded-xl p-4 shadow-sm no-print">
+      <h2 class="font-bold text-lg mb-3">Catat Pembayaran</h2>
+      <form id="formBayar" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="sm:col-span-2">
+          <label for="pilihTagihan" class="text-sm">KK yang membayar</label>
+          <select id="pilihTagihan" required>
+            <option value="">Pilih tagihan belum lunas</option>
+          </select>
+        </div>
+        <div>
+          <label for="tanggalBayar" class="text-sm">Tanggal pembayaran</label>
+          <input id="tanggalBayar" type="date" required>
+        </div>
+        <div>
+          <label for="metode" class="text-sm">Metode pembayaran</label>
+          <select id="metode" required>
+            <option value="Tunai">Tunai</option>
+            <option value="Transfer">Transfer</option>
+            <option value="QRIS">QRIS</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div>
+          <label for="nominal" class="text-sm">Nominal pembayaran (Rp)</label>
+          <input id="nominal" type="number" min="60000" max="60000"
+                 step="1" value="60000" required>
+          <p class="text-xs text-slate-500 mt-1">
+            Harus lunas Rp60.000 untuk satu tagihan.
+          </p>
+        </div>
+        <div>
+          <label for="keterangan" class="text-sm">Keterangan (opsional)</label>
+          <input id="keterangan" maxlength="500"
+                 placeholder="Contoh: Iuran bulan Oktober">
+        </div>
+        <div class="sm:col-span-2">
+          <button id="simpan" type="submit"
+            class="bg-emerald-600 text-white rounded-lg px-5 py-3
+                   font-semibold w-full sm:w-auto">
+            Simpan Pembayaran Lunas
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="bg-white rounded-xl p-4 shadow-sm">
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <div>
+          <h2 class="text-lg font-bold">Daftar Tagihan KK</h2>
+          <p id="infoPeriode" class="text-sm text-slate-500 mt-1"></p>
+        </div>
+        <button id="cetak" type="button"
+          class="bg-blue-600 text-white rounded-lg px-4 py-3 no-print">
+          Cetak Rekap
+        </button>
+      </div>
+
+      <div class="overflow-x-auto mt-4">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-100">
+            <tr>
+              <th>No.</th>
+              <th>No. KK</th>
+              <th>Blok</th>
+              <th>Tagihan</th>
+              <th>Status</th>
+              <th>Tanggal Bayar</th>
+              <th>Metode</th>
+            </tr>
+          </thead>
+          <tbody id="daftarTagihan">
+            <tr><td colspan="7">Pilih periode lalu muat data.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="jumlahBaris" class="text-sm text-slate-500 mt-3"></p>
+    </section>
+
+    <section class="bg-white rounded-xl p-4 shadow-sm">
+      <h2 class="text-lg font-bold">Rekap Periode Terpilih</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+        <div class="bg-slate-50 rounded-lg p-3">
+          <p class="text-sm text-slate-500">KK Belum Lunas</p>
+          <p id="kkBelum" class="font-bold text-xl">0 KK</p>
+        </div>
+        <div class="bg-slate-50 rounded-lg p-3">
+          <p class="text-sm text-slate-500">KK Sudah Lunas</p>
+          <p id="kkLunas" class="font-bold text-xl">0 KK</p>
+        </div>
+        <div class="bg-slate-50 rounded-lg p-3">
+          <p class="text-sm text-slate-500">Persentase Pelunasan</p>
+          <p id="persenLunas" class="font-bold text-xl">0%</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script type="module">
+import { supabase } from './app.js';
+
+const $ = id => document.getElementById(id);
+const TARIF = 60000;
+
+const rupiah = n => new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  maximumFractionDigits: 0
+}).format(Number(n) || 0);
+
+const tanggalLokal = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+
+$('tanggalBayar').value = tanggalLokal();
+$('periode').value = tanggalLokal().slice(0,7);
+
+let semuaKK = [];
+let semuaTagihan = [];
+let semuaPembayaran = [];
+let memuat = false;
+let mengirim = false;
+
+function pesan(teks, gagal = false) {
+  $('status').textContent = teks;
+  $('status').className = 'rounded-xl p-4 text-sm ' +
+    (gagal ? 'bg-rose-50 text-rose-800' : 'bg-emerald-50 text-emerald-800');
+}
+
+function periodeTerpilih() {
+  const bulan = $('periode').value;
+  if (!/^\d{4}-\d{2}$/.test(bulan)) {
+    throw new Error('Pilih bulan tagihan terlebih dahulu.');
+  }
+  return bulan + '-01';
+}
+
+function buatSel(tr, nilai, kelas = '') {
+  const td = document.createElement('td');
+  td.textContent = nilai == null || nilai === '' ? '-' : String(nilai);
+  if (kelas) td.className = kelas;
+  tr.appendChild(td);
+}
+
+function pembayaranUntuk(tagihanId) {
+  return semuaPembayaran.find(p => p.tagihan_id === tagihanId) || null;
+}
+
+function gambarUlang() {
+  const periode = periodeTerpilih();
+  const petaKK = new Map(semuaKK.map(k => [k.id, k]));
+  const daftar = semuaTagihan
+    .slice()
+    .sort((a,b) => {
+      const ka = petaKK.get(a.household_id);
+      const kb = petaKK.get(b.household_id);
+      return String(ka?.blok || '').localeCompare(String(kb?.blok || '')) ||
+        String(ka?.no_kk || '').localeCompare(String(kb?.no_kk || ''));
+    });
+
+  let lunas = 0;
+  let belum = 0;
+  let totalLunas = 0;
+  let totalTagihan = 0;
+  const tbody = $('daftarTagihan');
+  tbody.replaceChildren();
+
+  daftar.forEach((tagihan, index) => {
+    const kk = petaKK.get(tagihan.household_id);
+    const bayar = pembayaranUntuk(tagihan.id);
+    const sudah = Boolean(bayar);
+
+    totalTagihan += Number(tagihan.nominal_tagihan);
+    if (sudah) {
+      lunas++;
+      totalLunas += Number(bayar.nominal);
+    } else {
+      belum++;
+    }
+
+    const tr = document.createElement('tr');
+    buatSel(tr, index + 1);
+    buatSel(tr, kk?.no_kk || '(No. KK belum diisi)');
+    buatSel(tr, kk?.blok || '-');
+    buatSel(tr, rupiah(tagihan.nominal_tagihan));
+    buatSel(tr, sudah ? 'LUNAS' : 'BELUM LUNAS',
+      sudah ? 'font-semibold text-emerald-700' : 'font-semibold text-rose-700');
+    buatSel(tr, bayar?.tanggal_bayar || '-');
+    buatSel(tr, bayar?.metode || '-');
+    tbody.appendChild(tr);
+  });
+
+  if (!daftar.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 7;
+    td.className = 'text-center py-5 text-slate-500';
+    td.textContent = 'Belum ada tagihan. Tekan "Buat Tagihan Bulan Ini".';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
+
+  $('jumlahTagihan').textContent = daftar.length.toLocaleString('id-ID');
+  $('totalTagihan').textContent = rupiah(totalTagihan);
+  $('totalLunas').textContent = rupiah(totalLunas);
+  $('totalTunggakan').textContent = rupiah(totalTagihan - totalLunas);
+  $('kkLunas').textContent = lunas + ' KK';
+  $('kkBelum').textContent = belum + ' KK';
+  $('persenLunas').textContent = daftar.length
+    ? Math.round(lunas / daftar.length * 100) + '%'
+    : '0%';
+  $('jumlahBaris').textContent = `${daftar.length} tagihan ditampilkan`;
+  $('infoPeriode').textContent = 'Periode: ' + periode.slice(0,7);
+
+  const select = $('pilihTagihan');
+  const nilaiSebelumnya = select.value;
+  select.replaceChildren();
+  const awal = document.createElement('option');
+  awal.value = '';
+  awal.textContent = 'Pilih tagihan belum lunas';
+  select.appendChild(awal);
+
+  daftar.filter(t => !pembayaranUntuk(t.id)).forEach(t => {
+    const kk = petaKK.get(t.household_id);
+    const op = document.createElement('option');
+    op.value = t.id;
+    op.textContent =
+      `${kk?.no_kk || 'KK belum diisi'} · Blok ${kk?.blok || '-'} · ${rupiah(t.nominal_tagihan)}`;
+    select.appendChild(op);
+  });
+
+  if ([...select.options].some(o => o.value === nilaiSebelumnya)) {
+    select.value = nilaiSebelumnya;
+  }
+}
+
+async function muatData() {
+  if (memuat) return;
+  memuat = true;
+  $('muat').disabled = true;
+  $('buatTagihan').disabled = true;
+  pesan('Memuat data iuran...');
+
+  try {
+    const { data: sesiData, error: sesiError } =
+      await supabase.auth.getSession();
+    if (sesiError) throw sesiError;
+    if (!sesiData.session) {
+      $('app').classList.add('hidden');
+      pesan('Sesi login tidak ditemukan. Silakan login melalui halaman utama.', true);
+      return;
+    }
+
+    const periode = periodeTerpilih();
+
+    const [kkRes, tagihanRes, bayarRes] = await Promise.all([
+      supabase.from('households')
+        .select('id,no_kk,blok,status_hunian')
+        .order('blok', { ascending: true }),
+      supabase.from('iuran_bulanan')
+        .select('id,household_id,periode,nominal_tagihan')
+        .eq('periode', periode),
+      supabase.from('pembayaran_iuran')
+        .select('id,tagihan_id,tanggal_bayar,nominal,metode,keterangan,transaksi_kas_id')
+    ]);
+
+    if (kkRes.error) throw kkRes.error;
+    if (tagihanRes.error) throw tagihanRes.error;
+    if (bayarRes.error) throw bayarRes.error;
+
+    semuaKK = kkRes.data || [];
+    semuaTagihan = tagihanRes.data || [];
+    semuaPembayaran = bayarRes.data || [];
+
+    $('app').classList.remove('hidden');
+    gambarUlang();
+    pesan('Data iuran berhasil dimuat.');
+  } catch (e) {
+    $('app').classList.add('hidden');
+    pesan('Gagal memuat data: ' + (e.message || 'Kesalahan tidak diketahui.'), true);
+  } finally {
+    memuat = false;
+    $('muat').disabled = false;
+    $('buatTagihan').disabled = false;
+  }
+}
+
+async function buatTagihanBulanan() {
+  if (memuat || mengirim) return;
+
+  try {
+    const periode = periodeTerpilih();
+    const { data: sesiData, error: sesiError } =
+      await supabase.auth.getSession();
+    if (sesiError) throw sesiError;
+    if (!sesiData.session) throw new Error('Silakan login ulang.');
+
+    if (!semuaKK.length) {
+      await muatData();
+      if (!semuaKK.length) throw new Error('Belum ada data KK yang dapat dibaca.');
+    }
+
+    if (!confirm(
+      `Buat tagihan Rp60.000 untuk ${semuaKK.length} KK pada periode ${periode.slice(0,7)}? Tagihan yang sudah ada tidak akan digandakan.`
+    )) return;
+
+    mengirim = true;
+    $('buatTagihan').disabled = true;
+    pesan('Membuat tagihan...');
+
+    const rows = semuaKK.map(kk => ({
+      household_id: kk.id,
+      periode,
+      nominal_tagihan: TARIF,
+      created_by: sesiData.session.user.id
+    }));
+
+    const { error } = await supabase
+      .from('iuran_bulanan')
+      .upsert(rows, {
+        onConflict: 'household_id,periode',
+        ignoreDuplicates: true
+      });
+
+    if (error) throw error;
+
+    pesan('Tagihan bulan terpilih berhasil dibuat tanpa menggandakan tagihan.');
+    await muatData();
+  } catch (e) {
+    pesan('Gagal membuat tagihan: ' + (e.message || 'Kesalahan tidak diketahui.'), true);
+  } finally {
+    mengirim = false;
+    $('buatTagihan').disabled = false;
+  }
+}
+
+$('formBayar').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (mengirim || memuat) return;
+
+  const tagihanId = $('pilihTagihan').value;
+  const nominal = Number($('nominal').value);
+  const tanggal = $('tanggalBayar').value;
+  const metode = $('metode').value;
+  const keterangan = $('keterangan').value.trim();
+
+  if (!tagihanId) {
+    pesan('Pilih tagihan KK yang belum lunas.', true);
+    return;
+  }
+  if (nominal !== TARIF) {
+    pesan('Pembayaran harus tepat Rp60.000. Pembayaran sebagian ditolak.', true);
+    return;
+  }
+  if (!tanggal) {
+    pesan('Tanggal pembayaran wajib diisi.', true);
+    return;
+  }
+
+  const tagihan = semuaTagihan.find(t => t.id === tagihanId);
+  if (!tagihan) {
+    pesan('Tagihan tidak ditemukan. Muat ulang data.', true);
+    return;
+  }
+  if (pembayaranUntuk(tagihanId)) {
+    pesan('Tagihan ini sudah lunas. Muat ulang data.', true);
+    return;
+  }
+
+  const kk = semuaKK.find(k => k.id === tagihan.household_id);
+  if (!confirm(
+    `Konfirmasi pembayaran lunas?\nKK: ${kk?.no_kk || '-'}\nPeriode: ${String(tagihan.periode).slice(0,7)}\nNominal: ${rupiah(TARIF)}\n\nPembayaran akan dicatat sekaligus sebagai satu transaksi kas.`
+  )) return;
+
+  mengirim = true;
+  $('simpan').disabled = true;
+  $('simpan').textContent = 'Menyimpan...';
+
+  try {
+    const { data: sesiData, error: sesiError } =
+      await supabase.auth.getSession();
+    if (sesiError) throw sesiError;
+    if (!sesiData.session) throw new Error('Sesi login habis. Silakan login ulang.');
+
+    const { data, error } = await supabase.rpc('bayar_iuran_lunas', {
+      p_tagihan_id: tagihanId,
+      p_tanggal_bayar: tanggal,
+      p_metode: metode,
+      p_keterangan: keterangan || `Iuran KK ${kk?.no_kk || ''} periode ${String(tagihan.periode).slice(0,7)}`
+    });
+
+    if (error) throw error;
+    if (!data?.success) throw new Error('Server tidak mengonfirmasi pembayaran.');
+
+    pesan('Pembayaran lunas berhasil disimpan dan terhubung ke satu transaksi kas.');
+    $('formBayar').reset();
+    $('tanggalBayar').value = tanggalLokal();
+    $('nominal').value = TARIF;
+    await muatData();
+  } catch (e) {
+    pesan('Pembayaran gagal: ' + (e.message || 'Kesalahan tidak diketahui.'), true);
+  } finally {
+    mengirim = false;
+    $('simpan').disabled = false;
+    $('simpan').textContent = 'Simpan Pembayaran Lunas';
+  }
+});
+
+$('muat').addEventListener('click', muatData);
+$('periode').addEventListener('change', muatData);
+$('buatTagihan').addEventListener('click', buatTagihanBulanan);
+$('cetak').addEventListener('click', () => window.print());
+
+(async () => {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) {
+    pesan('Silakan login melalui halaman utama sebelum membuka Iuran Bulanan.', true);
+    return;
+  }
+  await muatData();
+})();
+</script>
+</body>
+</html>
