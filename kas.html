@@ -1,10 +1,12 @@
+HTML
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#047857">
-  <title>Iuran & Kas RT 05</title>
+  <title>Kas RT 05</title>
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
@@ -32,9 +34,7 @@
       outline-offset: 1px;
     }
 
-    button, a {
-      -webkit-tap-highlight-color: transparent;
-    }
+    button, a { -webkit-tap-highlight-color: transparent; }
 
     button:disabled {
       opacity: .6;
@@ -79,9 +79,7 @@
       color: #334155;
     }
 
-    tbody tr:last-child td {
-      border-bottom: 0;
-    }
+    tbody tr:last-child td { border-bottom: 0; }
 
     .kolom-tanggal { width: 100px; }
     .kolom-nomor { width: 145px; }
@@ -158,10 +156,6 @@
         overflow-wrap: anywhere;
       }
 
-      .kolom-nominal {
-        white-space: normal;
-      }
-
       #daftarKosong { display: none; }
 
       @page {
@@ -178,7 +172,7 @@
   <header class="bg-emerald-700 text-white p-5 rounded-2xl
                  flex justify-between items-center gap-3">
     <div>
-      <h1 class="judul-utama text-xl font-bold">Iuran & Kas RT 05</h1>
+      <h1 class="judul-utama text-xl font-bold">Kas RT 05</h1>
       <p class="text-sm mt-1">Pencatatan keuangan RT Digital</p>
     </div>
     <a href="dashboard.html"
@@ -195,7 +189,6 @@
 
   <div id="app" class="sembunyi space-y-4">
 
-    <!-- RINGKASAN SALDO -->
     <section class="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <div class="kartu">
         <p class="text-sm text-slate-500">Total Seluruh Pemasukan</p>
@@ -216,9 +209,12 @@
       </div>
     </section>
 
-    <!-- FORM TRANSAKSI -->
     <section class="kartu">
-      <h2 class="text-lg font-bold mb-4">Catat Transaksi</h2>
+      <h2 class="text-lg font-bold mb-2">Catat Transaksi Kas</h2>
+      <p class="text-sm text-amber-800 bg-amber-50 rounded-lg p-3 mb-4">
+        Pembayaran iuran warga harus dicatat melalui menu
+        Iuran Bulanan, bukan melalui formulir ini.
+      </p>
 
       <form id="formKas" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
@@ -237,7 +233,6 @@
         <div>
           <label for="kategori" class="block text-sm mb-1">Kategori</label>
           <select id="kategori" required>
-            <option value="Iuran warga">Iuran warga</option>
             <option value="Sumbangan">Sumbangan</option>
             <option value="Administrasi">Administrasi</option>
             <option value="Kebersihan">Kebersihan</option>
@@ -251,7 +246,7 @@
         <div>
           <label for="nominal" class="block text-sm mb-1">Nominal (Rp)</label>
           <input id="nominal" type="number" min="1" step="1"
-                 inputmode="numeric" placeholder="Contoh: 60000" required>
+                 inputmode="numeric" placeholder="Contoh: 25000" required>
         </div>
 
         <div class="sm:col-span-2">
@@ -276,7 +271,6 @@
       </form>
     </section>
 
-    <!-- RIWAYAT TRANSAKSI -->
     <section class="kartu print-area">
       <h2 class="text-lg font-bold">Riwayat Transaksi</h2>
       <p class="text-sm text-slate-500 mt-1">
@@ -333,7 +327,6 @@
         </p>
       </div>
     </section>
-
   </div>
 </main>
 
@@ -355,9 +348,8 @@ function tanggalLokal(date = new Date()) {
   return `${tahun}-${bulan}-${hari}`;
 }
 
-const tanggalHariIni = tanggalLokal();
-$('tanggal').value = tanggalHariIni;
-$('bulan').value = tanggalHariIni.slice(0, 7);
+$('tanggal').value = tanggalLokal();
+$('bulan').value = tanggalLokal().slice(0, 7);
 
 let semuaTransaksi = [];
 let sedangMemuat = false;
@@ -377,7 +369,6 @@ function tambahSel(tr, nilai, kelas = '') {
   td.textContent = nilai === null || nilai === undefined || nilai === ''
     ? '-'
     : String(nilai);
-
   if (kelas) td.className = kelas;
   tr.appendChild(td);
   return td;
@@ -399,7 +390,6 @@ function hitungSaldo() {
 
 function tampilkanRiwayat() {
   const bulan = $('bulan').value;
-
   const daftar = semuaTransaksi.filter(t =>
     !bulan || String(t.tanggal_transaksi || '').slice(0, 7) === bulan
   );
@@ -408,7 +398,6 @@ function tampilkanRiwayat() {
 
   const tbody = $('daftar');
   tbody.replaceChildren();
-
   $('daftarKosong').classList.toggle('sembunyi', daftar.length !== 0);
 
   let masukBulan = 0;
@@ -416,12 +405,10 @@ function tampilkanRiwayat() {
 
   daftar.forEach(t => {
     const nominal = Number(t.nominal || 0);
-
     if (t.tipe_transaksi === 'Pemasukan') masukBulan += nominal;
     if (t.tipe_transaksi === 'Pengeluaran') keluarBulan += nominal;
 
     const tr = document.createElement('tr');
-
     tambahSel(tr, t.tanggal_transaksi, 'whitespace-nowrap');
 
     const nomor = tambahSel(tr, t.nomor_transaksi, 'nomor-transaksi');
@@ -437,9 +424,7 @@ function tampilkanRiwayat() {
 
     tambahSel(tr, t.kategori);
     tambahSel(tr, t.keterangan);
-
     tambahSel(tr, rupiah(nominal), 'nominal');
-
     tbody.appendChild(tr);
   });
 
@@ -461,10 +446,7 @@ async function muatTransaksi() {
 
     if (!sesiData?.session) {
       $('app').classList.add('sembunyi');
-      pesan(
-        'Silakan login melalui halaman utama sebelum membuka Iuran & Kas RT.',
-        true
-      );
+      pesan('Silakan login melalui halaman utama sebelum membuka Kas RT.', true);
       return;
     }
 
@@ -479,7 +461,6 @@ async function muatTransaksi() {
     if (error) throw error;
 
     semuaTransaksi = data || [];
-
     hitungSaldo();
     tampilkanRiwayat();
 
@@ -488,11 +469,8 @@ async function muatTransaksi() {
   } catch (error) {
     console.error('Gagal memuat transaksi:', error);
     $('app').classList.add('sembunyi');
-    pesan(
-      'Gagal memuat data: ' +
-      (error.message || 'Kesalahan tidak diketahui.'),
-      true
-    );
+    pesan('Gagal memuat data: ' +
+      (error.message || 'Kesalahan tidak diketahui.'), true);
   } finally {
     sedangMemuat = false;
     $('muat').disabled = false;
@@ -506,7 +484,38 @@ $('formKas').addEventListener('submit', async event => {
 
   const nominal = Number($('nominal').value);
   const tanggal = $('tanggal').value;
+  const kategori = $('kategori').value;
+  const tipe = $('tipe').value;
   const keterangan = $('keterangan').value.trim();
+
+  // Perlindungan tambahan jika nilai kategori dimanipulasi.
+  if (kategori.trim().toLowerCase() === 'iuran warga') {
+    pesan(
+      'Pembayaran iuran hanya boleh dicatat melalui menu Iuran Bulanan.',
+      true
+    );
+    return;
+  }
+
+  if (!['Pemasukan', 'Pengeluaran'].includes(tipe)) {
+    pesan('Jenis transaksi tidak valid.', true);
+    return;
+  }
+
+  const kategoriDiizinkan = [
+    'Sumbangan',
+    'Administrasi',
+    'Kebersihan',
+    'Keamanan',
+    'Kegiatan warga',
+    'Perbaikan',
+    'Lain-lain'
+  ];
+
+  if (!kategoriDiizinkan.includes(kategori)) {
+    pesan('Kategori transaksi tidak valid.', true);
+    return;
+  }
 
   if (!Number.isSafeInteger(nominal) || nominal <= 0) {
     pesan('Nominal harus berupa angka rupiah bulat lebih dari nol.', true);
@@ -534,14 +543,14 @@ $('formKas').addEventListener('submit', async event => {
       throw new Error('Sesi login habis. Silakan login ulang.');
     }
 
-    const waktu = new Date();
-    const penandaWaktu =
-      `${waktu.getFullYear()}${String(waktu.getMonth() + 1).padStart(2, '0')}${String(waktu.getDate()).padStart(2, '0')}${String(waktu.getHours()).padStart(2, '0')}${String(waktu.getMinutes()).padStart(2, '0')}${String(waktu.getSeconds()).padStart(2, '0')}`;
+    // UUID mengurangi risiko nomor transaksi bentrok.
+    const nomor = 'RT05-KAS-' +
+      crypto.randomUUID().replace(/-/g, '').toUpperCase();
 
     const transaksiBaru = {
-      nomor_transaksi: 'RT05-' + penandaWaktu,
-      tipe_transaksi: $('tipe').value,
-      kategori: $('kategori').value,
+      nomor_transaksi: nomor,
+      tipe_transaksi: tipe,
+      kategori,
       nominal,
       tanggal_transaksi: tanggal,
       keterangan,
@@ -576,10 +585,7 @@ $('formKas').addEventListener('submit', async event => {
 
 $('muat').addEventListener('click', muatTransaksi);
 $('bulan').addEventListener('change', tampilkanRiwayat);
-
-$('cetak').addEventListener('click', () => {
-  window.print();
-});
+$('cetak').addEventListener('click', () => window.print());
 
 $('kosongkan').addEventListener('click', () => {
   setTimeout(() => {
