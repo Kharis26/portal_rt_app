@@ -1,269 +1,295 @@
-HTML
 
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#059669">
-    <title>Dashboard Pengurus - RT Digital</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#059669">
+  <title>Dashboard - Portal RT Digital 05</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #f1f5f9; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .kartu {
+      background: white;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 2px 5px rgba(15,23,42,.08);
+    }
+  </style>
 </head>
 
-<body class="bg-slate-100 min-h-screen p-4">
-    <main class="max-w-md mx-auto space-y-4">
+<body class="min-h-screen p-4">
+  <main class="max-w-2xl mx-auto space-y-4">
 
-        <header class="flex justify-between items-center bg-emerald-600
-                       text-white p-4 rounded-xl shadow">
-            <div>
-                <h1 class="font-bold text-lg">Dashboard RT Digital</h1>
-                <p id="infoWilayah" class="text-xs opacity-90">
-                    Memuat wilayah...
-                </p>
-            </div>
+    <header class="bg-emerald-600 text-white p-5 rounded-2xl shadow
+                   flex justify-between items-center gap-3">
+      <div>
+        <h1 class="font-bold text-xl">Dashboard RT Digital</h1>
+        <p id="infoWilayah" class="text-sm mt-1 opacity-90">
+          Memuat wilayah...
+        </p>
+      </div>
+      <button id="btnLogout" type="button"
+        class="bg-emerald-800 hover:bg-emerald-900 text-white
+               text-sm px-4 py-3 rounded-xl">
+        Keluar
+      </button>
+    </header>
 
-            <button id="btnLogout" type="button"
-                class="bg-emerald-700 text-xs px-3 py-2 rounded-lg">
-                Keluar
-            </button>
-        </header>
+    <div id="statusDashboard" role="status" aria-live="polite"
+      class="bg-white p-4 rounded-xl text-sm text-slate-600">
+      Memeriksa sesi dan memuat data...
+    </div>
 
-        <div id="statusDashboard" role="status" aria-live="polite"
-            class="bg-white p-3 rounded-xl text-sm text-slate-600">
-            Memeriksa sesi dan memuat data...
-        </div>
+    <!-- Ringkasan -->
+    <section class="grid grid-cols-2 gap-3">
+      <a href="warga.html"
+        class="kartu border-l-4 border-emerald-500">
+        <p class="text-sm text-slate-500 font-semibold">Warga Aktif</p>
+        <p id="totalWarga" class="text-2xl font-bold mt-2">Memuat...</p>
+      </a>
 
-        <section class="grid grid-cols-2 gap-3">
-            <a href="warga.html"
-                class="bg-white p-4 rounded-xl shadow border-l-4 border-emerald-500">
-                <p class="text-xs text-slate-500 font-semibold">Warga Aktif</p>
-                <p id="totalWarga" class="text-xl font-bold mt-1">Memuat...</p>
-            </a>
+      <a href="warga.html"
+        class="kartu border-l-4 border-blue-500">
+        <p class="text-sm text-slate-500 font-semibold">Total KK</p>
+        <p id="totalKK" class="text-2xl font-bold mt-2">Memuat...</p>
+      </a>
+    </section>
 
-            <a href="warga.html"
-                class="bg-white p-4 rounded-xl shadow border-l-4 border-blue-500">
-                <p class="text-xs text-slate-500 font-semibold">Total KK</p>
-                <p id="totalKK" class="text-xl font-bold mt-1">Memuat...</p>
-            </a>
-        </section>
+    <section class="kartu border-l-4 border-amber-500">
+      <p class="text-sm text-slate-500 font-semibold">Saldo Kas RT</p>
+      <p id="saldoKas" class="text-3xl font-bold mt-2">Memuat...</p>
+      <p class="text-xs text-slate-500 mt-2">
+        Saldo dihitung dari seluruh pemasukan dikurangi pengeluaran.
+      </p>
+    </section>
 
-        <section class="bg-white p-4 rounded-xl shadow border-l-4 border-amber-500">
-            <p class="text-xs text-slate-500 font-semibold">Saldo Kas RT</p>
-            <p id="saldoKas" class="text-2xl font-bold mt-1">Memuat...</p>
-        </section>
+    <!-- Menu utama -->
+    <section>
+      <h2 class="font-bold text-slate-700 text-lg mb-3">Menu Utama</h2>
 
-        <section>
-            <h2 class="font-bold text-slate-700 mb-3">Menu Utama</h2>
+      <div class="grid grid-cols-2 gap-3">
+        <a href="warga.html"
+          class="kartu text-center border border-slate-200
+                 hover:border-emerald-400">
+          <span class="block text-3xl mb-2">👥</span>
+          <span class="font-semibold">Data Warga &amp; KK</span>
+          <p class="text-xs text-slate-500 mt-2">
+            Data keluarga dan warga
+          </p>
+        </a>
 
-            <div class="grid grid-cols-2 gap-3">
-                <a href="warga.html"
-                    class="bg-white p-4 rounded-xl shadow text-center
-                           text-sm font-semibold border border-slate-200">
-                    <span class="block text-2xl mb-2">👥</span>
-                    Data Warga &amp; KK
-                </a>
+        <a href="iuran.html"
+          class="kartu text-center border border-slate-200
+                 hover:border-emerald-400">
+          <span class="block text-3xl mb-2">📋</span>
+          <span class="font-semibold">Iuran Bulanan</span>
+          <p class="text-xs text-slate-500 mt-2">
+            Tagihan, pembayaran, dan tunggakan
+          </p>
+        </a>
 
-                <a href="kas.html"
-                    id="btnKas"
-                    class="bg-white p-4 rounded-xl shadow text-center
-                           text-sm font-semibold border border-slate-200
-                           hover:border-emerald-500">
-                    <span class="block text-2xl mb-2">💰</span>
-                    Iuran &amp; Kas RT
-                </a>
-            </div>
-        </section>
+        <a href="kas.html"
+          class="kartu text-center border border-slate-200
+                 hover:border-emerald-400">
+          <span class="block text-3xl mb-2">💰</span>
+          <span class="font-semibold">Kas RT</span>
+          <p class="text-xs text-slate-500 mt-2">
+            Pemasukan dan pengeluaran
+          </p>
+        </a>
 
         <button id="btnRefresh" type="button"
-            class="w-full bg-white p-3 rounded-xl shadow
-                   border border-slate-200 text-sm font-semibold text-emerald-700">
-            ↻ Perbarui Data
+          class="kartu text-center border border-slate-200
+                 hover:border-emerald-400 col-span-2
+                 text-emerald-700 font-semibold">
+          <span class="block text-2xl mb-1">↻</span>
+          Perbarui Data Dashboard
         </button>
+      </div>
+    </section>
 
-    </main>
+    <footer class="text-center text-xs text-slate-500 py-3">
+      Portal RT Digital 05 · Sistem informasi dan administrasi RT
+    </footer>
+  </main>
 
-    <script type="module">
-        import {
-            cekSesi,
-            logout,
-            tesKoneksi,
-            muatRingkasanDashboard
-        } from './app.js';
+  <script type="module">
+    import {
+      cekSesi,
+      logout,
+      tesKoneksi,
+      muatRingkasanDashboard
+    } from './app.js';
 
-        const $ = id => document.getElementById(id);
+    const $ = id => document.getElementById(id);
 
-        let sedangMemuat = false;
-        let sedangLogout = false;
+    let sedangMemuat = false;
+    let sedangLogout = false;
 
-        function denganBatasWaktu(promise, nama, ms = 15000) {
-            let timer;
+    function denganBatasWaktu(promise, nama, ms = 15000) {
+      let timer;
 
-            return Promise.race([
-                promise,
-                new Promise((_, reject) => {
-                    timer = setTimeout(() => {
-                        reject(new Error(
-                            nama + ' tidak merespons dalam ' +
-                            Math.round(ms / 1000) + ' detik.'
-                        ));
-                    }, ms);
-                })
-            ]).finally(() => clearTimeout(timer));
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => {
+            reject(new Error(
+              nama + ' tidak merespons dalam ' +
+              Math.round(ms / 1000) + ' detik.'
+            ));
+          }, ms);
+        })
+      ]).finally(() => clearTimeout(timer));
+    }
+
+    function tampilkanStatus(teks, gagal = false) {
+      const box = $('statusDashboard');
+      box.textContent = teks;
+      box.className = 'p-4 rounded-xl text-sm ' +
+        (gagal
+          ? 'bg-rose-50 text-rose-800'
+          : 'bg-white text-emerald-700');
+    }
+
+    function formatRupiah(nilai) {
+      const angka = Number(nilai);
+
+      if (nilai === null || nilai === undefined ||
+          nilai === '' || !Number.isFinite(angka)) {
+        throw new Error('Nilai saldo kas tidak valid.');
+      }
+
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        maximumFractionDigits: 0
+      }).format(angka);
+    }
+
+    async function muatDashboard() {
+      if (sedangMemuat || sedangLogout) return;
+
+      sedangMemuat = true;
+      $('btnRefresh').disabled = true;
+
+      $('totalWarga').textContent = 'Memuat...';
+      $('totalKK').textContent = 'Memuat...';
+      $('saldoKas').textContent = 'Memuat...';
+      tampilkanStatus('Memeriksa sesi dan memuat data...');
+
+      try {
+        const sesi = await denganBatasWaktu(
+          cekSesi(),
+          'Pemeriksaan sesi'
+        );
+
+        if (!sesi) {
+          window.location.replace('index.html');
+          return;
         }
 
-        function tampilkanStatus(teks, error = false) {
-            const box = $('statusDashboard');
+        const [ringkasan, wilayah] = await Promise.all([
+          denganBatasWaktu(
+            muatRingkasanDashboard(),
+            'Ringkasan dashboard'
+          ),
+          denganBatasWaktu(
+            tesKoneksi(),
+            'Pengaturan wilayah'
+          )
+        ]);
 
-            box.textContent = teks;
-            box.className = error
-                ? 'bg-white p-3 rounded-xl text-sm text-red-700'
-                : 'bg-white p-3 rounded-xl text-sm text-emerald-700';
+        if (!ringkasan ||
+            !Number.isFinite(Number(ringkasan.totalWarga)) ||
+            !Number.isFinite(Number(ringkasan.totalKK)) ||
+            !Number.isFinite(Number(ringkasan.saldoKas))) {
+          throw new Error('Data ringkasan dashboard tidak valid.');
         }
 
-        function formatRupiah(nilai) {
-            const angka = Number(nilai);
+        $('totalWarga').textContent =
+          Number(ringkasan.totalWarga).toLocaleString('id-ID') +
+          ' Jiwa';
 
-            if (nilai === null || nilai === undefined ||
-                nilai === '' || !Number.isFinite(angka)) {
-                throw new Error('Nilai saldo kas tidak valid.');
-            }
+        $('totalKK').textContent =
+          Number(ringkasan.totalKK).toLocaleString('id-ID') +
+          ' KK';
 
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                maximumFractionDigits: 0
-            }).format(angka);
+        $('saldoKas').textContent =
+          formatRupiah(ringkasan.saldoKas);
+
+        if (wilayah) {
+          const rt = wilayah.rt ?? '-';
+          const rw = wilayah.rw ?? '-';
+          const desa = wilayah.desa_kelurahan ?? '';
+          const kabupaten = wilayah.kabupaten_kota ?? '';
+
+          $('infoWilayah').textContent =
+            `RT ${rt} / RW ${rw}` +
+            (desa ? ` · ${desa}` : '') +
+            (kabupaten ? `, ${kabupaten}` : '');
+        } else {
+          $('infoWilayah').textContent =
+            'Pengaturan wilayah belum tersedia.';
         }
 
-        async function muatDashboard() {
-            if (sedangMemuat || sedangLogout) return;
+        tampilkanStatus('Data dashboard berhasil dimuat.');
 
-            sedangMemuat = true;
-            $('btnRefresh').disabled = true;
+      } catch (error) {
+        console.error('Kesalahan dashboard:', error);
 
-            $('totalWarga').textContent = 'Memuat...';
-            $('totalKK').textContent = 'Memuat...';
-            $('saldoKas').textContent = 'Memuat...';
+        $('totalWarga').textContent = '—';
+        $('totalKK').textContent = '—';
+        $('saldoKas').textContent = '—';
 
-            tampilkanStatus('Memeriksa sesi dan memuat data...');
+        tampilkanStatus(
+          'Gagal memuat data: ' +
+          (error.message || 'Kesalahan tidak diketahui.') +
+          ' Tekan Perbarui Data untuk mencoba kembali.',
+          true
+        );
+      } finally {
+        sedangMemuat = false;
+        $('btnRefresh').disabled = false;
+      }
+    }
 
-            try {
-                const sesi = await denganBatasWaktu(
-                    cekSesi(),
-                    'Pemeriksaan sesi'
-                );
+    $('btnLogout').addEventListener('click', async () => {
+      if (sedangLogout) return;
 
-                if (!sesi) {
-                    window.location.replace('index.html');
-                    return;
-                }
+      sedangLogout = true;
+      $('btnLogout').disabled = true;
+      $('btnLogout').textContent = 'Keluar...';
 
-                const [ringkasan, wilayah] = await Promise.all([
-                    denganBatasWaktu(
-                        muatRingkasanDashboard(),
-                        'Ringkasan dashboard'
-                    ),
-                    denganBatasWaktu(
-                        tesKoneksi(),
-                        'Pengaturan wilayah'
-                    )
-                ]);
+      try {
+        const hasil = await denganBatasWaktu(
+          logout(),
+          'Logout'
+        );
 
-                if (!ringkasan ||
-                    !Number.isFinite(Number(ringkasan.totalWarga)) ||
-                    !Number.isFinite(Number(ringkasan.totalKK))) {
-                    throw new Error(
-                        'Format ringkasan warga atau KK tidak valid.'
-                    );
-                }
-
-                $('totalWarga').textContent =
-                    Number(ringkasan.totalWarga)
-                        .toLocaleString('id-ID') + ' Jiwa';
-
-                $('totalKK').textContent =
-                    Number(ringkasan.totalKK)
-                        .toLocaleString('id-ID') + ' KK';
-
-                $('saldoKas').textContent =
-                    formatRupiah(ringkasan.saldoKas);
-
-                if (wilayah) {
-                    const rt = wilayah.rt ?? '-';
-                    const rw = wilayah.rw ?? '-';
-                    const desa = wilayah.desa_kelurahan ?? '';
-                    const kabupaten = wilayah.kabupaten_kota ?? '';
-
-                    $('infoWilayah').textContent =
-                        `RT ${rt} / RW ${rw} · ${desa}` +
-                        (kabupaten ? `, ${kabupaten}` : '');
-                } else {
-                    $('infoWilayah').textContent =
-                        'Pengaturan wilayah belum tersedia.';
-                }
-
-                tampilkanStatus('Data dashboard berhasil dimuat.');
-
-            } catch (error) {
-                console.error('Kesalahan dashboard:', error);
-
-                $('totalWarga').textContent = '—';
-                $('totalKK').textContent = '—';
-                $('saldoKas').textContent = '—';
-
-                tampilkanStatus(
-                    'Gagal memuat data: ' +
-                    (error.message || 'Kesalahan tidak diketahui.') +
-                    ' Tekan Perbarui Data untuk mencoba kembali.',
-                    true
-                );
-            } finally {
-                sedangMemuat = false;
-                $('btnRefresh').disabled = false;
-            }
+        if (!hasil || !hasil.success) {
+          throw new Error(hasil?.message || 'Logout gagal.');
         }
 
-        $('btnLogout').addEventListener('click', async () => {
-            if (sedangLogout) return;
+        window.location.replace('index.html');
 
-            sedangLogout = true;
-            $('btnLogout').disabled = true;
+      } catch (error) {
+        tampilkanStatus(
+          'Logout gagal: ' +
+          (error.message || 'Kesalahan tidak diketahui.'),
+          true
+        );
 
-            try {
-                const hasil = await denganBatasWaktu(
-                    logout(),
-                    'Logout'
-                );
+        sedangLogout = false;
+        $('btnLogout').disabled = false;
+        $('btnLogout').textContent = 'Keluar';
+      }
+    });
 
-                if (!hasil || !hasil.success) {
-                    throw new Error(
-                        hasil?.message || 'Logout gagal.'
-                    );
-                }
+    $('btnRefresh').addEventListener('click', muatDashboard);
 
-                window.location.replace('index.html');
-
-            } catch (error) {
-                tampilkanStatus(
-                    'Logout gagal: ' + error.message,
-                    true
-                );
-
-                sedangLogout = false;
-                $('btnLogout').disabled = false;
-            }
-        });
-
-        $('btnRefresh').addEventListener('click', muatDashboard);
-
-        // Menu Iuran & Kas RT sekarang membuka kas.html.
-        // Halaman kas.html tetap memeriksa sesi login.
-        $('btnKas').addEventListener('click', event => {
-            event.preventDefault();
-            window.location.href = 'kas.html';
-        });
-
-        muatDashboard();
-    </script>
+    muatDashboard();
+  </script>
 </body>
 </html>
