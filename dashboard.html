@@ -1,3 +1,4 @@
+HTML
 
 <!DOCTYPE html>
 <html lang="id">
@@ -62,12 +63,14 @@
                     Data Warga &amp; KK
                 </a>
 
-                <button id="btnKas" type="button"
+                <a href="kas.html"
+                    id="btnKas"
                     class="bg-white p-4 rounded-xl shadow text-center
-                           text-sm font-semibold border border-slate-200">
+                           text-sm font-semibold border border-slate-200
+                           hover:border-emerald-500">
                     <span class="block text-2xl mb-2">💰</span>
                     Iuran &amp; Kas RT
-                </button>
+                </a>
             </div>
         </section>
 
@@ -88,10 +91,10 @@
         } from './app.js';
 
         const $ = id => document.getElementById(id);
+
         let sedangMemuat = false;
         let sedangLogout = false;
 
-        // Batas waktu untuk proses yang berpotensi tertahan.
         function denganBatasWaktu(promise, nama, ms = 15000) {
             let timer;
 
@@ -145,7 +148,6 @@
             tampilkanStatus('Memeriksa sesi dan memuat data...');
 
             try {
-                // 1. Periksa sesi login.
                 const sesi = await denganBatasWaktu(
                     cekSesi(),
                     'Pemeriksaan sesi'
@@ -156,7 +158,6 @@
                     return;
                 }
 
-                // 2. Ambil ringkasan dan wilayah secara bersamaan.
                 const [ringkasan, wilayah] = await Promise.all([
                     denganBatasWaktu(
                         muatRingkasanDashboard(),
@@ -168,7 +169,6 @@
                     )
                 ]);
 
-                // 3. Validasi hasil sebelum ditampilkan.
                 if (!ringkasan ||
                     !Number.isFinite(Number(ringkasan.totalWarga)) ||
                     !Number.isFinite(Number(ringkasan.totalKK))) {
@@ -223,7 +223,6 @@
             }
         }
 
-        // 4. Logout dengan pemeriksaan hasil.
         $('btnLogout').addEventListener('click', async () => {
             if (sedangLogout) return;
 
@@ -255,20 +254,15 @@
             }
         });
 
-        // 5. Muat ulang data.
-        $('btnRefresh').addEventListener(
-            'click',
-            muatDashboard
-        );
+        $('btnRefresh').addEventListener('click', muatDashboard);
 
-        // Menu transaksi belum dibuat.
-        $('btnKas').addEventListener('click', () => {
-            tampilkanStatus(
-                'Menu Iuran & Kas RT belum terhubung ke halaman transaksi.'
-            );
+        // Menu Iuran & Kas RT sekarang membuka kas.html.
+        // Halaman kas.html tetap memeriksa sesi login.
+        $('btnKas').addEventListener('click', event => {
+            event.preventDefault();
+            window.location.href = 'kas.html';
         });
 
-        // Jalankan dashboard.
         muatDashboard();
     </script>
 </body>
